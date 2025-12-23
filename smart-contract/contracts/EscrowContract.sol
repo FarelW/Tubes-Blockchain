@@ -1,0 +1,584 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+contract EscrowContract {
+    enum EscrowStatus {
+        Created,        // 0: Shipper sends request (no payment yet)
+        PriceProposed,  // 1: Logistics proposed price (waiting for shipper payment)
+        PriceRejected,  // 2: Logistics rejected the request
+        Funded,         // 3: Shipper paid (approved and funded)
+        InTransit,      // 4: Logistics delivering
+        Delivered,      // 5: Logistics marked as delivered
+        Completed,      // 6: Admin verified and completed
+        Refunded,       // 7: Funds refunded to shipper
+        Disputed        // 8: Dispute raised
+    }
+
+    struct Escrow {
+        uint256 id;
+        address buyer;
+        address seller;
+        uint256 amount;
+        string destinationGPS;
+        int256 minTemperature;
+        int256 maxTemperature;
+        uint256 deadline;
+        EscrowStatus status;
+        bool verified;
+        uint256 createdAt;
+        uint256 verifiedAt;
+    }
+
+    struct VerificationData {
+        string currentGPS;
+        int256 temperature;
+        uint256 timestamp;
+        bool gpsMatched;
+        bool temperatureValid;
+    }
+
+    address public owner;
+    address public oracle;
+    uint256 public escrowCounter;
+    uint256 public constant GPS_TOLERANCE = 100;
+
+    mapping(uint256 => Escrow) public escrows;
+    mapping(uint256 => VerificationData) public verifications;
+    mapping(address => uint256[]) public userEscrows;
+
+    event EscrowCreated(
+        uint256 indexed escrowId,
+        address indexed buyer,
+        address indexed seller,
+        string destinationGPS,
+        uint256 deadline
+    );
+
+    event PriceProposed(
+        uint256 indexed escrowId,
+        address indexed seller,
+        uint256 amount
+    );
+
+    event PriceRejected(
+        uint256 indexed escrowId,
+        address indexed seller
+    );
+
+    event EscrowFunded(uint256 indexed escrowId, uint256 amount);
+
+    event EscrowApproved(uint256 indexed escrowId, address indexed seller);
+
+    event DeliveryStarted(uint256 indexed escrowId, uint256 timestamp);
+
+    event DeliveryMarked(uint256 indexed escrowId, address indexed seller);
+
+    event VerificationRequested(
+        uint256 indexed escrowId,
+        address indexed requester
+    );
+
+    event DeliveryVerified(
+        uint256 indexed escrowId,
+        bool gpsMatched,
+        bool temperatureValid,
+        bool verified
+    );
+
+    event FundsReleased(
+        uint256 indexed escrowId,
+        address indexed recipient,
+        uint256 amount
+    );
+
+    event EscrowRefunded(
+        uint256 indexed escrowId,
+        address indexed buyer,
+        uint256 amount
+    );
+
+    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+
+    modifier onlyOracle() {
+        require(msg.sender == oracle, "Only oracle can call this function");
+        _;
+    }
+
+    modifier onlyBuyer(uint256 _escrowId) {
+        require(
+            escrows[_escrowId].buyer == msg.sender,
+            "Only buyer can call this function"
+        );
+        _;
+    }
+
+    modifier onlySeller(uint256 _escrowId) {
+        require(
+            escrows[_escrowId].seller == msg.sender,
+            "Only seller can call this function"
+        );
+        _;
+    }
+
+    modifier escrowExists(uint256 _escrowId) {
+        require(
+            _escrowId > 0 && _escrowId <= escrowCounter,
+            "Escrow does not exist"
+        );
+        _;
+    }
+
+    modifier inStatus(uint256 _escrowId, EscrowStatus _status) {
+        require(escrows[_escrowId].status == _status, "Invalid escrow status");
+        _;
+    }
+
+    constructor(address _oracle) {
+        require(_oracle != address(0), "Oracle address cannot be zero");
+        owner = msg.sender;
+        oracle = _oracle;
+        escrowCounter = 0;
+    }
+
+    /**
+     * @dev Create a new escrow request (no payment yet)
+     * Shipper creates request, logistics will set price later
+     * @param _seller Address of the seller (logistics)
+     * @param _destinationGPS GPS coordinates of destination (format: "lat,lng")
+     * @param _minTemperature Minimum acceptable temperature (Celsius * 100)
+     * @param _maxTemperature Maximum acceptable temperature (Celsius * 100)
+     * @param _deadline Deadline timestamp for delivery
+     * @return escrowId The ID of the created escrow
+     */
+    function createEscrow(
+        address _seller,
+        string memory _destinationGPS,
+        int256 _minTemperature,
+        int256 _maxTemperature,
+        uint256 _deadline
+    ) external returns (uint256) {
+        require(_seller != address(0), "Seller address cannot be zero");
+        require(_seller != msg.sender, "Buyer cannot be seller");
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(
+            _minTemperature < _maxTemperature,
+            "Min temp must be less than max temp"
+        );
+        require(
+            bytes(_destinationGPS).length > 0,
+            "Destination GPS is required"
+        );
+
+        escrowCounter++;
+        uint256 escrowId = escrowCounter;
+
+        escrows[escrowId] = Escrow({
+            id: escrowId,
+            buyer: msg.sender,
+            seller: _seller,
+            amount: 0, // Amount will be set by logistics
+            destinationGPS: _destinationGPS,
+            minTemperature: _minTemperature,
+            maxTemperature: _maxTemperature,
+            deadline: _deadline,
+            status: EscrowStatus.Created,
+            verified: false,
+            createdAt: block.timestamp,
+            verifiedAt: 0
+        });
+
+        userEscrows[msg.sender].push(escrowId);
+        userEscrows[_seller].push(escrowId);
+
+        emit EscrowCreated(
+            escrowId,
+            msg.sender,
+            _seller,
+            _destinationGPS,
+            _deadline
+        );
+
+        return escrowId;
+    }
+
+    /**
+     * @dev Logistics sets price and approves the escrow
+     * Changes status from Created to PriceProposed
+     * @param _escrowId ID of the escrow
+     * @param _amount Price in wei
+     */
+    function setPriceAndApprove(
+        uint256 _escrowId,
+        uint256 _amount
+    )
+        external
+        escrowExists(_escrowId)
+        onlySeller(_escrowId)
+        inStatus(_escrowId, EscrowStatus.Created)
+    {
+        require(_amount > 0, "Amount must be greater than 0");
+        
+        escrows[_escrowId].amount = _amount;
+        escrows[_escrowId].status = EscrowStatus.PriceProposed;
+        
+        emit PriceProposed(_escrowId, msg.sender, _amount);
+    }
+
+    /**
+     * @dev Logistics rejects the escrow request
+     * Changes status from Created to PriceRejected
+     * @param _escrowId ID of the escrow
+     */
+    function rejectPrice(
+        uint256 _escrowId
+    )
+        external
+        escrowExists(_escrowId)
+        onlySeller(_escrowId)
+        inStatus(_escrowId, EscrowStatus.Created)
+    {
+        escrows[_escrowId].status = EscrowStatus.PriceRejected;
+        emit PriceRejected(_escrowId, msg.sender);
+    }
+
+    /**
+     * @dev Shipper pays for the escrow after logistics approved price
+     * Changes status from PriceProposed to Funded
+     * @param _escrowId ID of the escrow
+     */
+    function fundEscrow(
+        uint256 _escrowId
+    )
+        external
+        payable
+        escrowExists(_escrowId)
+        onlyBuyer(_escrowId)
+        inStatus(_escrowId, EscrowStatus.PriceProposed)
+    {
+        Escrow storage escrow = escrows[_escrowId];
+        require(msg.value == escrow.amount, "Payment amount must match proposed price");
+        
+        escrow.status = EscrowStatus.Funded;
+        emit EscrowFunded(_escrowId, msg.value);
+    }
+
+    /**
+     * @dev Approve escrow by seller (logistics) - DEPRECATED
+     * Use setPriceAndApprove instead
+     * @param _escrowId ID of the escrow to approve
+     */
+    function approveEscrow(
+        uint256 _escrowId
+    )
+        external
+        escrowExists(_escrowId)
+        onlySeller(_escrowId)
+        inStatus(_escrowId, EscrowStatus.Created)
+    {
+        // This function is deprecated, use setPriceAndApprove instead
+        revert("Use setPriceAndApprove to set price and approve");
+    }
+
+    function startDelivery(
+        uint256 _escrowId
+    )
+        external
+        escrowExists(_escrowId)
+        onlySeller(_escrowId)
+        inStatus(_escrowId, EscrowStatus.Funded)
+    {
+        escrows[_escrowId].status = EscrowStatus.InTransit;
+        emit DeliveryStarted(_escrowId, block.timestamp);
+    }
+
+    function markDelivered(
+        uint256 _escrowId
+    )
+        external
+        escrowExists(_escrowId)
+        onlySeller(_escrowId)
+        inStatus(_escrowId, EscrowStatus.InTransit)
+    {
+        escrows[_escrowId].status = EscrowStatus.Delivered;
+        emit DeliveryMarked(_escrowId, msg.sender);
+    }
+
+    function requestVerification(
+        uint256 _escrowId
+    ) external escrowExists(_escrowId) {
+        Escrow storage escrow = escrows[_escrowId];
+        require(
+            escrow.status == EscrowStatus.InTransit ||
+                escrow.status == EscrowStatus.Delivered,
+            "Escrow not in transit or delivered"
+        );
+        require(
+            msg.sender == escrow.buyer || msg.sender == escrow.seller,
+            "Only buyer or seller can request verification"
+        );
+
+        emit VerificationRequested(_escrowId, msg.sender);
+    }
+
+    /**
+     * @dev Submit verification result from oracle
+     * Validates GPS and temperature, auto-releases funds if verified
+     * @param _escrowId ID of the escrow
+     * @param _currentGPS Current GPS coordinates
+     * @param _temperature Current temperature (Celsius * 100)
+     * @param _gpsMatched Whether GPS matches destination
+     * @param _temperatureValid Whether temperature is within range
+     */
+    function verifyDelivery(
+        uint256 _escrowId,
+        string memory _currentGPS,
+        int256 _temperature,
+        bool _gpsMatched,
+        bool _temperatureValid
+    ) external onlyOracle escrowExists(_escrowId) {
+        Escrow storage escrow = escrows[_escrowId];
+        require(
+            escrow.status == EscrowStatus.Delivered,
+            "Escrow must be in Delivered status"
+        );
+        require(!escrow.verified, "Escrow already verified");
+
+        verifications[_escrowId] = VerificationData({
+            currentGPS: _currentGPS,
+            temperature: _temperature,
+            timestamp: block.timestamp,
+            gpsMatched: _gpsMatched,
+            temperatureValid: _temperatureValid
+        });
+
+        bool verified = _gpsMatched && _temperatureValid;
+        escrow.verified = verified;
+        escrow.verifiedAt = block.timestamp;
+
+        if (verified) {
+            // Go directly to Completed and release funds
+            escrow.status = EscrowStatus.Completed;
+            escrow.verified = true;
+            _releaseFunds(_escrowId);
+        } else {
+            // If verification fails, status remains Delivered
+            // Admin can manually refund or retry verification
+        }
+
+        emit DeliveryVerified(
+            _escrowId,
+            _gpsMatched,
+            _temperatureValid,
+            verified
+        );
+    }
+
+    function _releaseFunds(uint256 _escrowId) internal {
+        Escrow storage escrow = escrows[_escrowId];
+        require(
+            escrow.status == EscrowStatus.Completed,
+            "Invalid status for release"
+        );
+
+        uint256 amount = escrow.amount;
+        address seller = escrow.seller;
+
+        (bool success, ) = payable(seller).call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit FundsReleased(_escrowId, seller, amount);
+    }
+
+    /**
+     * @dev Refund buyer if deadline passed and delivery not verified
+     * @param _escrowId ID of the escrow to refund
+     */
+    function refund(
+        uint256 _escrowId
+    ) external escrowExists(_escrowId) {
+        Escrow storage escrow = escrows[_escrowId];
+        require(
+            escrow.status == EscrowStatus.Funded ||
+                escrow.status == EscrowStatus.InTransit ||
+                escrow.status == EscrowStatus.Delivered,
+            "Cannot refund this escrow"
+        );
+        require(
+            msg.sender == escrow.buyer || msg.sender == owner || msg.sender == oracle,
+            "Only buyer, owner, or oracle can refund"
+        );
+        
+        // Only check deadline if called by buyer (admin/oracle can refund anytime)
+        if (msg.sender == escrow.buyer) {
+            require(block.timestamp > escrow.deadline, "Deadline not yet passed");
+        }
+        
+        require(!escrow.verified, "Delivery already verified");
+        require(escrow.amount > 0, "No funds to refund");
+
+        uint256 amount = escrow.amount;
+        address buyer = escrow.buyer;
+
+        escrow.status = EscrowStatus.Refunded;
+
+        (bool success, ) = payable(buyer).call{value: amount}("");
+        require(success, "Refund failed");
+
+        emit EscrowRefunded(_escrowId, buyer, amount);
+    }
+
+    function getEscrow(
+        uint256 _escrowId
+    ) external view escrowExists(_escrowId) returns (Escrow memory) {
+        return escrows[_escrowId];
+    }
+
+    function getVerification(
+        uint256 _escrowId
+    ) external view escrowExists(_escrowId) returns (VerificationData memory) {
+        return verifications[_escrowId];
+    }
+
+    function getUserEscrows(
+        address _user
+    ) external view returns (uint256[] memory) {
+        return userEscrows[_user];
+    }
+
+    function getEscrowStatus(
+        uint256 _escrowId
+    ) external view escrowExists(_escrowId) returns (EscrowStatus) {
+        return escrows[_escrowId].status;
+    }
+
+    function isEscrowActive(
+        uint256 _escrowId
+    ) external view escrowExists(_escrowId) returns (bool) {
+        EscrowStatus status = escrows[_escrowId].status;
+        return
+            status == EscrowStatus.Funded ||
+            status == EscrowStatus.InTransit ||
+            status == EscrowStatus.Delivered;
+    }
+
+    function setOracle(address _newOracle) external onlyOwner {
+        require(_newOracle != address(0), "Oracle address cannot be zero");
+        address oldOracle = oracle;
+        oracle = _newOracle;
+        emit OracleUpdated(oldOracle, _newOracle);
+    }
+
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    /**
+     * @dev Reset escrow counter (only owner)
+     * WARNING: This will not delete existing escrows, but will reset the counter
+     * New escrows will start from ID 1 again
+     */
+    function resetEscrowCounter() external onlyOwner {
+        escrowCounter = 0;
+    }
+
+    /**
+     * @dev Clear user escrows mapping for a specific address (only owner)
+     * This removes all escrow IDs from the user's escrow list
+     * @param _user Address of the user whose escrows should be cleared
+     */
+    function clearUserEscrows(address _user) external onlyOwner {
+        delete userEscrows[_user];
+    }
+
+    /**
+     * @dev Clear all user escrows mappings (only owner)
+     * WARNING: This will clear escrow lists for ALL users
+     * Use with caution - this makes existing escrows inaccessible via getUserEscrows()
+     */
+    function clearAllUserEscrows() external onlyOwner {
+        // Note: Solidity doesn't support iterating over mappings
+        // This function can only clear known addresses
+        // For a complete reset, you may need to deploy a new contract
+    }
+
+    /**
+     * @dev Admin function to manually update escrow status (only owner or oracle)
+     * This allows admin to change status for any escrow to any status
+     * Use with caution - this bypasses normal workflow
+     * If status is changed to Completed, funds will be automatically released to seller
+     * @param _escrowId ID of the escrow
+     * @param _newStatus New status to set
+     */
+    function adminUpdateStatus(
+        uint256 _escrowId,
+        EscrowStatus _newStatus
+    ) external escrowExists(_escrowId) {
+        require(
+            msg.sender == owner || msg.sender == oracle,
+            "Only owner or oracle can call this function"
+        );
+        
+        Escrow storage escrow = escrows[_escrowId];
+        EscrowStatus oldStatus = escrow.status;
+        
+        // If changing to Completed, release funds to seller
+        if (_newStatus == EscrowStatus.Completed && oldStatus != EscrowStatus.Completed) {
+            require(
+                oldStatus != EscrowStatus.Refunded && oldStatus != EscrowStatus.Completed,
+                "Cannot complete refunded or already completed escrow"
+            );
+            require(escrow.amount > 0, "Escrow amount must be greater than 0");
+            require(
+                address(this).balance >= escrow.amount,
+                "Contract does not have enough balance"
+            );
+            
+            uint256 amount = escrow.amount;
+            address seller = escrow.seller;
+            
+            escrow.status = EscrowStatus.Completed;
+            escrow.verified = true; // Mark as verified when admin completes it
+            
+            (bool success, ) = payable(seller).call{value: amount}("");
+            require(success, "Transfer failed");
+            
+            emit FundsReleased(_escrowId, seller, amount);
+        } else if (_newStatus == EscrowStatus.Refunded && oldStatus != EscrowStatus.Refunded) {
+            // If changing to Refunded, refund buyer
+            require(
+                oldStatus != EscrowStatus.Completed && oldStatus != EscrowStatus.Refunded,
+                "Cannot refund completed or already refunded escrow"
+            );
+            require(escrow.amount > 0, "Escrow amount must be greater than 0");
+            require(
+                address(this).balance >= escrow.amount,
+                "Contract does not have enough balance"
+            );
+            
+            uint256 amount = escrow.amount;
+            address buyer = escrow.buyer;
+            
+            escrow.status = EscrowStatus.Refunded;
+            
+            (bool success, ) = payable(buyer).call{value: amount}("");
+            require(success, "Refund failed");
+            
+            emit EscrowRefunded(_escrowId, buyer, amount);
+        } else {
+            escrow.status = _newStatus;
+        }
+        
+        emit StatusUpdated(_escrowId, uint8(oldStatus), uint8(_newStatus));
+    }
+
+    event StatusUpdated(
+        uint256 indexed escrowId,
+        uint8 oldStatus,
+        uint8 newStatus
+    );
+}

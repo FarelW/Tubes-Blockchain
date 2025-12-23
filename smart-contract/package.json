@@ -1,0 +1,26 @@
+{
+  "name": "smart-contract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "node": "npx hardhat node",
+    "deploy": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:geth": "npx hardhat run scripts/deploy.js --network geth",
+    "update-oracle": "npx hardhat run scripts/updateOracle.js --network localhost"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "escrow",
+    "logistics"
+  ],
+  "author": "",
+  "license": "MIT",
+  "description": "Smart contracts for B2B Logistics Escrow System",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.22.0"
+  }
+}
