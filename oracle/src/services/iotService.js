@@ -16,6 +16,8 @@ class IoTService {
         return {
           gps: dummyData.gps,
           temperature: dummyData.temperature,
+          humidity: dummyData.humidity,
+          pressure: dummyData.pressure,
           timestamp: dummyData.timestamp,
           sensorId: dummyData.sensorId
         };
@@ -52,12 +54,22 @@ class IoTService {
       throw new Error('Invalid temperature data in IoT response');
     }
 
+    if (typeof data.humidity !== 'number') {
+      throw new Error('Invalid humidity data in IoT response');
+    }
+
+    if (typeof data.pressure !== 'number') {
+      throw new Error('Invalid pressure data in IoT response');
+    }
+
     return {
       gps: {
         latitude: data.gps.latitude,
         longitude: data.gps.longitude
       },
       temperature: data.temperature,
+      humidity: data.humidity,
+      pressure: data.pressure,
       timestamp: data.timestamp || Date.now(),
       sensorId: data.sensorId || 'unknown'
     };
@@ -70,6 +82,8 @@ class IoTService {
         longitude: 106.8456 + (Math.random() - 0.5) * 0.001
       },
       temperature: 20 + Math.random() * 10,
+      humidity: 40 + Math.random() * 30,        // 40-70% humidity
+      pressure: 1000 + Math.random() * 30,      // 1000-1030 hPa
       timestamp: Date.now(),
       sensorId: 'mock-sensor-001'
     };
@@ -79,6 +93,8 @@ class IoTService {
     this.mockData.set(escrowId, {
       gps: data.gps,
       temperature: data.temperature,
+      humidity: data.humidity || 50,
+      pressure: data.pressure || 1013,
       timestamp: Date.now(),
       sensorId: data.sensorId || 'mock-sensor'
     });

@@ -466,18 +466,42 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
         error: 'Status Verified (4) requires oracle verification. Please use the verification endpoint or ensure oracle processes the verification request.'
       })
     } else if (targetStatus === 5 && (currentStatus === 3 || currentStatus === 4)) {
-      // Delivered/Verified -> Completed: Use adminUpdateStatus
+      // Delivered/Verified -> Completed: Trigger oracle verification first
       try {
-        result = await blockchainService.adminUpdateStatus(BigInt(escrowId), targetStatus)
-        return res.json({
-          success: true,
-          message: 'Status updated to Completed',
-          escrowId,
-          transactionHash: result.hash
-        })
+        logger.info(`Admin triggered verification for escrow ${escrowId}`)
+        
+        // Use oracle verification to validate IoT data before completing
+        const verificationResult = await blockchainService.processVerificationRequest(BigInt(escrowId))
+        
+        if (verificationResult.verified) {
+          return res.json({
+            success: true,
+            message: 'Verification passed! Status updated to Completed and funds released.',
+            escrowId,
+            verification: {
+              gpsMatched: verificationResult.gpsMatched,
+              temperatureValid: verificationResult.temperatureValid,
+              humidityValid: verificationResult.humidityValid,
+              pressureValid: verificationResult.pressureValid
+            },
+            transactionHash: verificationResult.hash
+          })
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Verification failed! Funds not released.',
+            escrowId,
+            verification: {
+              gpsMatched: verificationResult.gpsMatched,
+              temperatureValid: verificationResult.temperatureValid,
+              humidityValid: verificationResult.humidityValid,
+              pressureValid: verificationResult.pressureValid
+            }
+          })
+        }
       } catch (error) {
         return res.status(400).json({
-          error: `Cannot update status to Completed: ${error.message}. Make sure oracle wallet is the contract owner or oracle.`
+          error: `Verification failed: ${error.message}`
         })
       }
     } else {

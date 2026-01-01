@@ -6,6 +6,8 @@ export interface DummyIoTData {
     longitude: number
   }
   temperature: number
+  humidity?: number
+  pressure?: number
   timestamp: number
   sensorId: string
   progress?: number

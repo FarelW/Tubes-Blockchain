@@ -8,19 +8,19 @@ import './loadEnv.js'
 
 const ESCROW_CONTRACT_ABI = [
   // Events
-  "event EscrowCreated(uint256 indexed escrowId, address indexed buyer, address indexed seller, uint256 amount, string destinationGPS, uint256 deadline)",
+  "event EscrowCreated(uint256 indexed escrowId, address indexed buyer, address indexed seller, string destinationGPS, uint256 deadline)",
   "event EscrowFunded(uint256 indexed escrowId, uint256 amount)",
   "event EscrowApproved(uint256 indexed escrowId, address indexed seller)",
   "event DeliveryStarted(uint256 indexed escrowId, uint256 timestamp)",
   "event DeliveryMarked(uint256 indexed escrowId, address indexed seller)",
   "event VerificationRequested(uint256 indexed escrowId, address indexed requester)",
-  "event DeliveryVerified(uint256 indexed escrowId, bool gpsMatched, bool temperatureValid, bool verified)",
+  "event DeliveryVerified(uint256 indexed escrowId, bool gpsMatched, bool temperatureValid, bool humidityValid, bool pressureValid, bool verified)",
   "event FundsReleased(uint256 indexed escrowId, address indexed recipient, uint256 amount)",
   "event EscrowRefunded(uint256 indexed escrowId, address indexed buyer, uint256 amount)",
 
   // Read functions
-  "function getEscrow(uint256 escrowId) view returns (tuple(uint256 id, address buyer, address seller, uint256 amount, string destinationGPS, int256 minTemperature, int256 maxTemperature, uint256 deadline, uint8 status, bool verified, uint256 createdAt, uint256 verifiedAt))",
-  "function getVerification(uint256 escrowId) view returns (tuple(string currentGPS, int256 temperature, uint256 timestamp, bool gpsMatched, bool temperatureValid))",
+  "function getEscrow(uint256 escrowId) view returns (tuple(uint256 id, address buyer, address seller, uint256 amount, string destinationGPS, int256 minTemperature, int256 maxTemperature, int256 minHumidity, int256 maxHumidity, int256 minPressure, int256 maxPressure, uint256 deadline, uint8 status, bool verified, uint256 createdAt, uint256 verifiedAt))",
+  "function getVerification(uint256 escrowId) view returns (tuple(string currentGPS, int256 temperature, int256 humidity, int256 pressure, uint256 timestamp, bool gpsMatched, bool temperatureValid, bool humidityValid, bool pressureValid))",
   "function getUserEscrows(address user) view returns (uint256[])",
   "function getEscrowStatus(uint256 escrowId) view returns (uint8)",
   "function isEscrowActive(uint256 escrowId) view returns (bool)",
@@ -31,7 +31,7 @@ const ESCROW_CONTRACT_ABI = [
   "function approveEscrow(uint256 escrowId)",
   "function startDelivery(uint256 escrowId)",
   "function markDelivered(uint256 escrowId)",
-  "function verifyDelivery(uint256 escrowId, string memory currentGPS, int256 temperature, bool gpsMatched, bool temperatureValid)",
+  "function verifyDelivery(uint256 escrowId, string memory currentGPS, int256 temperature, int256 humidity, int256 pressure, bool gpsMatched, bool temperatureValid, bool humidityValid, bool pressureValid)",
   "function resetEscrowCounter() external",
   "function clearUserEscrows(address _user) external",
   "function adminUpdateStatus(uint256 _escrowId, uint8 _newStatus) external",

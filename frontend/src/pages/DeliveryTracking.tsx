@@ -12,11 +12,17 @@ interface TrackingData {
   currentGPS: { lat: number; lng: number }
   destinationGPS: { lat: number; lng: number }
   temperature: number
+  humidity: number
+  pressure: number
   status: EscrowStatus
   statusLabel: string
   verified: boolean
   minTemp: number
   maxTemp: number
+  minHumidity: number
+  maxHumidity: number
+  minPressure: number
+  maxPressure: number
 }
 
 function DeliveryTracking() {
@@ -64,6 +70,8 @@ function DeliveryTracking() {
 
       let currentGPS = { lat: destLat, lng: destLng }
       let temperature = (Number(escrowData.minTemperature) + Number(escrowData.maxTemperature)) / 200
+      let humidity = (Number(escrowData.minHumidity) + Number(escrowData.maxHumidity)) / 200
+      let pressure = (Number(escrowData.minPressure) + Number(escrowData.maxPressure)) / 200
 
       const iotData = await getDummyIoTData(escrowId)
       if (iotData) {
@@ -72,12 +80,16 @@ function DeliveryTracking() {
           lng: iotData.gps.longitude
         }
         temperature = iotData.temperature
+        humidity = iotData.humidity || humidity
+        pressure = iotData.pressure || pressure
       }
 
       if (verificationData && verificationData.currentGPS) {
         const [verLat, verLng] = verificationData.currentGPS.split(',').map(Number)
         currentGPS = { lat: verLat, lng: verLng }
         temperature = Number(verificationData.temperature) / 100
+        humidity = Number(verificationData.humidity) / 100
+        pressure = Number(verificationData.pressure) / 100
       }
 
       const trackingData: TrackingData = {
@@ -85,11 +97,17 @@ function DeliveryTracking() {
         currentGPS,
         destinationGPS: { lat: destLat, lng: destLng },
         temperature,
+        humidity,
+        pressure,
         status: escrowData.status,
         statusLabel: getStatusLabel(escrowData.status),
         verified: escrowData.verified,
         minTemp: Number(escrowData.minTemperature) / 100,
-        maxTemp: Number(escrowData.maxTemperature) / 100
+        maxTemp: Number(escrowData.maxTemperature) / 100,
+        minHumidity: Number(escrowData.minHumidity) / 100,
+        maxHumidity: Number(escrowData.maxHumidity) / 100,
+        minPressure: Number(escrowData.minPressure) / 100,
+        maxPressure: Number(escrowData.maxPressure) / 100
       }
 
       setTrackingData(trackingData)
@@ -191,6 +209,10 @@ function DeliveryTracking() {
   const isAtDestination = distance < 0.1
   const tempStatus = trackingData.temperature >= trackingData.minTemp &&
     trackingData.temperature <= trackingData.maxTemp ? 'safe' : 'warning'
+  const humidityStatus = trackingData.humidity >= trackingData.minHumidity &&
+    trackingData.humidity <= trackingData.maxHumidity ? 'safe' : 'warning'
+  const pressureStatus = trackingData.pressure >= trackingData.minPressure &&
+    trackingData.pressure <= trackingData.maxPressure ? 'safe' : 'warning'
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -253,9 +275,39 @@ function DeliveryTracking() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">Humidity</h3>
+          <div className={`p-4 rounded-lg text-center ${humidityStatus === 'safe' ? 'bg-blue-50 text-blue-800' : 'bg-orange-50 text-orange-800'
+            }`}>
+            <div className="text-3xl font-bold mb-1">{trackingData.humidity.toFixed(1)}%</div>
+            <div className="text-sm font-semibold">
+              {humidityStatus === 'safe' ? '✓ Safe' : '⚠ Warning'}
+            </div>
+            <div className="text-xs mt-2 text-gray-600">
+              Range: {trackingData.minHumidity}% - {trackingData.maxHumidity}%
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">Pressure</h3>
+          <div className={`p-4 rounded-lg text-center ${pressureStatus === 'safe' ? 'bg-purple-50 text-purple-800' : 'bg-orange-50 text-orange-800'
+            }`}>
+            <div className="text-3xl font-bold mb-1">{trackingData.pressure.toFixed(1)} hPa</div>
+            <div className="text-sm font-semibold">
+              {pressureStatus === 'safe' ? '✓ Safe' : '⚠ Warning'}
+            </div>
+            <div className="text-xs mt-2 text-gray-600">
+              Range: {trackingData.minPressure} hPa - {trackingData.maxPressure} hPa
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white p-6 rounded-xl shadow-md mb-6">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">Verification Status</h3>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className={`p-3 rounded-lg ${isAtDestination ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'
             }`}>
             {isAtDestination ? '✓' : '○'} GPS matches destination
@@ -264,7 +316,15 @@ function DeliveryTracking() {
             }`}>
             {tempStatus === 'safe' ? '✓' : '○'} Temperature within range
           </div>
-          <div className={`p-3 rounded-lg ${trackingData.verified ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'
+          <div className={`p-3 rounded-lg ${humidityStatus === 'safe' ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'
+            }`}>
+            {humidityStatus === 'safe' ? '✓' : '○'} Humidity within range
+          </div>
+          <div className={`p-3 rounded-lg ${pressureStatus === 'safe' ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'
+            }`}>
+            {pressureStatus === 'safe' ? '✓' : '○'} Pressure within range
+          </div>
+          <div className={`p-3 rounded-lg md:col-span-2 ${trackingData.verified ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'
             }`}>
             {trackingData.verified ? '✓' : '○'} Oracle verification complete
           </div>

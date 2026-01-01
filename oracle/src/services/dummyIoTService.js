@@ -12,6 +12,10 @@ class DummyIoTService {
       destinationGPS,
       minTemp = 0,
       maxTemp = 30,
+      minHumidity = 30,
+      maxHumidity = 70,
+      minPressure = 980,
+      maxPressure = 1030,
       duration = 60000 // 60 seconds default
     } = config;
 
@@ -30,8 +34,14 @@ class DummyIoTService {
       destination: { latitude: destLat, longitude: destLng },
       currentGPS: { latitude: originGPS.latitude, longitude: originGPS.longitude },
       temperature: minTemp + (maxTemp - minTemp) / 2,
+      humidity: minHumidity + (maxHumidity - minHumidity) / 2,
+      pressure: minPressure + (maxPressure - minPressure) / 2,
       minTemp,
       maxTemp,
+      minHumidity,
+      maxHumidity,
+      minPressure,
+      maxPressure,
       startTime: Date.now(),
       duration,
       progress: 0,
@@ -56,9 +66,20 @@ class DummyIoTService {
         longitude: originGPS.longitude + (lngStep * stepCount)
       };
 
+      // Temperature simulation with variation
       const baseTemp = minTemp + (maxTemp - minTemp) * 0.5;
-      const variation = (Math.random() - 0.5) * 5;
-      delivery.temperature = Math.max(minTemp, Math.min(maxTemp, baseTemp + variation));
+      const tempVariation = (Math.random() - 0.5) * 5;
+      delivery.temperature = Math.max(minTemp, Math.min(maxTemp, baseTemp + tempVariation));
+
+      // Humidity simulation with variation
+      const baseHumidity = minHumidity + (maxHumidity - minHumidity) * 0.5;
+      const humidityVariation = (Math.random() - 0.5) * 10;
+      delivery.humidity = Math.max(minHumidity, Math.min(maxHumidity, baseHumidity + humidityVariation));
+
+      // Pressure simulation with variation
+      const basePressure = minPressure + (maxPressure - minPressure) * 0.5;
+      const pressureVariation = (Math.random() - 0.5) * 20;
+      delivery.pressure = Math.max(minPressure, Math.min(maxPressure, basePressure + pressureVariation));
 
       delivery.progress = progress;
       delivery.timestamp = Date.now();
@@ -66,6 +87,8 @@ class DummyIoTService {
       delivery.history.push({
         gps: { ...delivery.currentGPS },
         temperature: delivery.temperature,
+        humidity: delivery.humidity,
+        pressure: delivery.pressure,
         timestamp: delivery.timestamp,
         progress
       });
@@ -115,6 +138,8 @@ class DummyIoTService {
         longitude: delivery.currentGPS.longitude
       },
       temperature: delivery.temperature,
+      humidity: delivery.humidity,
+      pressure: delivery.pressure,
       timestamp: delivery.timestamp || Date.now(),
       sensorId: delivery.sensorId,
       progress: delivery.progress,
@@ -136,6 +161,8 @@ class DummyIoTService {
         escrowId,
         currentGPS: delivery.currentGPS,
         temperature: delivery.temperature,
+        humidity: delivery.humidity,
+        pressure: delivery.pressure,
         progress: delivery.progress,
         status: delivery.status,
         timestamp: delivery.timestamp

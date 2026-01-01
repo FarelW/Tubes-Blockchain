@@ -65,6 +65,10 @@ function CreateEscrow() {
     destinationGPS: '',
     minTemperature: '',
     maxTemperature: '',
+    minHumidity: '',
+    maxHumidity: '',
+    minPressure: '',
+    maxPressure: '',
     deadline: ''
   })
 
@@ -146,6 +150,10 @@ function CreateEscrow() {
         formData.destinationGPS,
         parseFloat(formData.minTemperature),
         parseFloat(formData.maxTemperature),
+        parseFloat(formData.minHumidity),
+        parseFloat(formData.maxHumidity),
+        parseFloat(formData.minPressure),
+        parseFloat(formData.maxPressure),
         parseInt(formData.deadline)
       )
 
@@ -254,6 +262,82 @@ function CreateEscrow() {
                 value={formData.maxTemperature}
                 onChange={handleChange}
                 placeholder="30"
+                step="0.1"
+                required
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="minHumidity" className="block text-sm font-semibold text-gray-700 mb-2">
+                Min Humidity (%)
+              </label>
+              <input
+                type="number"
+                id="minHumidity"
+                name="minHumidity"
+                value={formData.minHumidity}
+                onChange={handleChange}
+                placeholder="30"
+                step="0.1"
+                min="0"
+                max="100"
+                required
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="maxHumidity" className="block text-sm font-semibold text-gray-700 mb-2">
+                Max Humidity (%)
+              </label>
+              <input
+                type="number"
+                id="maxHumidity"
+                name="maxHumidity"
+                value={formData.maxHumidity}
+                onChange={handleChange}
+                placeholder="70"
+                step="0.1"
+                min="0"
+                max="100"
+                required
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="minPressure" className="block text-sm font-semibold text-gray-700 mb-2">
+                Min Pressure (hPa)
+              </label>
+              <input
+                type="number"
+                id="minPressure"
+                name="minPressure"
+                value={formData.minPressure}
+                onChange={handleChange}
+                placeholder="980"
+                step="0.1"
+                required
+                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="maxPressure" className="block text-sm font-semibold text-gray-700 mb-2">
+                Max Pressure (hPa)
+              </label>
+              <input
+                type="number"
+                id="maxPressure"
+                name="maxPressure"
+                value={formData.maxPressure}
+                onChange={handleChange}
+                placeholder="1030"
                 step="0.1"
                 required
                 className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:outline-none transition"

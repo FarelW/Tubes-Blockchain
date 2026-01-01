@@ -2,12 +2,22 @@ import config from '../config/iotConfig.js'
 import logger from '../utils/logger.js'
 
 class ValidatorService {
-  validateDelivery(iotData, destinationGPS, minTemperature, maxTemperature) {
+  validateDelivery(iotData, destinationGPS, minTemperature, maxTemperature, minHumidity, maxHumidity, minPressure, maxPressure) {
     const gpsResult = this.validateGPS(iotData.gps, destinationGPS);
     const tempResult = this.validateTemperature(
       iotData.temperature,
       minTemperature,
       maxTemperature
+    );
+    const humidityResult = this.validateHumidity(
+      iotData.humidity,
+      minHumidity,
+      maxHumidity
+    );
+    const pressureResult = this.validatePressure(
+      iotData.pressure,
+      minPressure,
+      maxPressure
     );
 
     return {
@@ -15,7 +25,11 @@ class ValidatorService {
       gpsDistance: gpsResult.distance,
       temperatureValid: tempResult.valid,
       temperatureDelta: tempResult.delta,
-      verified: gpsResult.matched && tempResult.valid,
+      humidityValid: humidityResult.valid,
+      humidityDelta: humidityResult.delta,
+      pressureValid: pressureResult.valid,
+      pressureDelta: pressureResult.delta,
+      verified: gpsResult.matched && tempResult.valid && humidityResult.valid && pressureResult.valid,
       timestamp: Date.now()
     };
   }
@@ -87,6 +101,54 @@ class ValidatorService {
       current: temperature,
       min: minTemp,
       max: maxTemp
+    };
+  }
+
+  validateHumidity(humidity, minHumidity, maxHumidity) {
+    const minHum = minHumidity / 100;
+    const maxHum = maxHumidity / 100;
+
+    const valid = humidity >= minHum && humidity <= maxHum;
+
+    let delta = 0;
+    if (humidity < minHum) {
+      delta = humidity - minHum;
+    } else if (humidity > maxHum) {
+      delta = humidity - maxHum;
+    }
+
+    logger.info(`Humidity: ${humidity}%, Range: ${minHum}% - ${maxHum}%, Valid: ${valid}`);
+
+    return {
+      valid,
+      delta,
+      current: humidity,
+      min: minHum,
+      max: maxHum
+    };
+  }
+
+  validatePressure(pressure, minPressure, maxPressure) {
+    const minPres = minPressure / 100;
+    const maxPres = maxPressure / 100;
+
+    const valid = pressure >= minPres && pressure <= maxPres;
+
+    let delta = 0;
+    if (pressure < minPres) {
+      delta = pressure - minPres;
+    } else if (pressure > maxPres) {
+      delta = pressure - maxPres;
+    }
+
+    logger.info(`Pressure: ${pressure} hPa, Range: ${minPres} hPa - ${maxPres} hPa, Valid: ${valid}`);
+
+    return {
+      valid,
+      delta,
+      current: pressure,
+      min: minPres,
+      max: maxPres
     };
   }
 }

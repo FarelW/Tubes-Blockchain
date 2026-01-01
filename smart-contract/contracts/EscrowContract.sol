@@ -22,6 +22,10 @@ contract EscrowContract {
         string destinationGPS;
         int256 minTemperature;
         int256 maxTemperature;
+        int256 minHumidity;     
+        int256 maxHumidity;     
+        int256 minPressure;     
+        int256 maxPressure;      
         uint256 deadline;
         EscrowStatus status;
         bool verified;
@@ -32,9 +36,13 @@ contract EscrowContract {
     struct VerificationData {
         string currentGPS;
         int256 temperature;
+        int256 humidity;
+        int256 pressure;
         uint256 timestamp;
         bool gpsMatched;
         bool temperatureValid;
+        bool humidityValid;
+        bool pressureValid;
     }
 
     address public owner;
@@ -82,6 +90,8 @@ contract EscrowContract {
         uint256 indexed escrowId,
         bool gpsMatched,
         bool temperatureValid,
+        bool humidityValid,
+        bool pressureValid,
         bool verified
     );
 
@@ -152,6 +162,10 @@ contract EscrowContract {
      * @param _destinationGPS GPS coordinates of destination (format: "lat,lng")
      * @param _minTemperature Minimum acceptable temperature (Celsius * 100)
      * @param _maxTemperature Maximum acceptable temperature (Celsius * 100)
+     * @param _minHumidity Minimum acceptable humidity (% * 100)
+     * @param _maxHumidity Maximum acceptable humidity (% * 100)
+     * @param _minPressure Minimum acceptable pressure (hPa * 100)
+     * @param _maxPressure Maximum acceptable pressure (hPa * 100)
      * @param _deadline Deadline timestamp for delivery
      * @return escrowId The ID of the created escrow
      */
@@ -160,6 +174,10 @@ contract EscrowContract {
         string memory _destinationGPS,
         int256 _minTemperature,
         int256 _maxTemperature,
+        int256 _minHumidity,
+        int256 _maxHumidity,
+        int256 _minPressure,
+        int256 _maxPressure,
         uint256 _deadline
     ) external returns (uint256) {
         require(_seller != address(0), "Seller address cannot be zero");
@@ -168,6 +186,14 @@ contract EscrowContract {
         require(
             _minTemperature < _maxTemperature,
             "Min temp must be less than max temp"
+        );
+        require(
+            _minHumidity < _maxHumidity,
+            "Min humidity must be less than max humidity"
+        );
+        require(
+            _minPressure < _maxPressure,
+            "Min pressure must be less than max pressure"
         );
         require(
             bytes(_destinationGPS).length > 0,
@@ -185,6 +211,10 @@ contract EscrowContract {
             destinationGPS: _destinationGPS,
             minTemperature: _minTemperature,
             maxTemperature: _maxTemperature,
+            minHumidity: _minHumidity,
+            maxHumidity: _maxHumidity,
+            minPressure: _minPressure,
+            maxPressure: _maxPressure,
             deadline: _deadline,
             status: EscrowStatus.Created,
             verified: false,
@@ -327,19 +357,27 @@ contract EscrowContract {
 
     /**
      * @dev Submit verification result from oracle
-     * Validates GPS and temperature, auto-releases funds if verified
+     * Validates GPS, temperature, humidity, and pressure, auto-releases funds if verified
      * @param _escrowId ID of the escrow
      * @param _currentGPS Current GPS coordinates
      * @param _temperature Current temperature (Celsius * 100)
+     * @param _humidity Current humidity (% * 100)
+     * @param _pressure Current pressure (hPa * 100)
      * @param _gpsMatched Whether GPS matches destination
      * @param _temperatureValid Whether temperature is within range
+     * @param _humidityValid Whether humidity is within range
+     * @param _pressureValid Whether pressure is within range
      */
     function verifyDelivery(
         uint256 _escrowId,
         string memory _currentGPS,
         int256 _temperature,
+        int256 _humidity,
+        int256 _pressure,
         bool _gpsMatched,
-        bool _temperatureValid
+        bool _temperatureValid,
+        bool _humidityValid,
+        bool _pressureValid
     ) external onlyOracle escrowExists(_escrowId) {
         Escrow storage escrow = escrows[_escrowId];
         require(
@@ -351,12 +389,16 @@ contract EscrowContract {
         verifications[_escrowId] = VerificationData({
             currentGPS: _currentGPS,
             temperature: _temperature,
+            humidity: _humidity,
+            pressure: _pressure,
             timestamp: block.timestamp,
             gpsMatched: _gpsMatched,
-            temperatureValid: _temperatureValid
+            temperatureValid: _temperatureValid,
+            humidityValid: _humidityValid,
+            pressureValid: _pressureValid
         });
 
-        bool verified = _gpsMatched && _temperatureValid;
+        bool verified = _gpsMatched && _temperatureValid && _humidityValid && _pressureValid;
         escrow.verified = verified;
         escrow.verifiedAt = block.timestamp;
 
@@ -374,6 +416,8 @@ contract EscrowContract {
             _escrowId,
             _gpsMatched,
             _temperatureValid,
+            _humidityValid,
+            _pressureValid,
             verified
         );
     }

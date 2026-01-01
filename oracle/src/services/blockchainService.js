@@ -140,9 +140,13 @@ class BlockchainService {
         iotData,
         escrow.destinationGPS,
         Number(escrow.minTemperature),
-        Number(escrow.maxTemperature)
+        Number(escrow.maxTemperature),
+        Number(escrow.minHumidity),
+        Number(escrow.maxHumidity),
+        Number(escrow.minPressure),
+        Number(escrow.maxPressure)
       )
-      logger.info(`Validation result: GPS matched=${validation.gpsMatched}, Temp valid=${validation.temperatureValid}`)
+      logger.info(`Validation result: GPS matched=${validation.gpsMatched}, Temp valid=${validation.temperatureValid}, Humidity valid=${validation.humidityValid}, Pressure valid=${validation.pressureValid}`)
 
       // Always submit verification (even if validation fails) - contract will handle it
       // But only if validation passes, funds will be released
@@ -150,14 +154,18 @@ class BlockchainService {
         escrowId,
         `${iotData.gps.latitude},${iotData.gps.longitude}`,
         Math.round(iotData.temperature * 100),
+        Math.round(iotData.humidity * 100),
+        Math.round(iotData.pressure * 100),
         validation.gpsMatched,
-        validation.temperatureValid
+        validation.temperatureValid,
+        validation.humidityValid,
+        validation.pressureValid
       )
       
-      if (validation.gpsMatched && validation.temperatureValid) {
+      if (validation.verified) {
         logger.info(`Verification submitted and funds released for escrow ${escrowId}`)
       } else {
-        logger.warn(`Verification submitted but failed for escrow ${escrowId}. GPS matched: ${validation.gpsMatched}, Temp valid: ${validation.temperatureValid}. Funds will NOT be released.`)
+        logger.warn(`Verification submitted but failed for escrow ${escrowId}. GPS matched: ${validation.gpsMatched}, Temp valid: ${validation.temperatureValid}, Humidity valid: ${validation.humidityValid}, Pressure valid: ${validation.pressureValid}. Funds will NOT be released.`)
       }
 
       return validation
@@ -181,6 +189,10 @@ class BlockchainService {
       destinationGPS: escrow.destinationGPS,
       minTemperature: escrow.minTemperature,
       maxTemperature: escrow.maxTemperature,
+      minHumidity: escrow.minHumidity,
+      maxHumidity: escrow.maxHumidity,
+      minPressure: escrow.minPressure,
+      maxPressure: escrow.maxPressure,
       deadline: escrow.deadline,
       status: escrow.status,
       verified: escrow.verified,
@@ -189,7 +201,7 @@ class BlockchainService {
     }
   }
 
-  async submitVerification(escrowId, currentGPS, temperature, gpsMatched, temperatureValid) {
+  async submitVerification(escrowId, currentGPS, temperature, humidity, pressure, gpsMatched, temperatureValid, humidityValid, pressureValid) {
     if (!this.contract) {
       throw new Error('Contract not initialized')
     }
@@ -198,8 +210,12 @@ class BlockchainService {
       escrowId,
       currentGPS,
       temperature,
+      humidity,
+      pressure,
       gpsMatched,
-      temperatureValid
+      temperatureValid,
+      humidityValid,
+      pressureValid
     )
 
     logger.info(`Transaction submitted: ${tx.hash}`)

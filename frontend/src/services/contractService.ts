@@ -10,6 +10,10 @@ export interface EscrowData {
   destinationGPS: string
   minTemperature: bigint
   maxTemperature: bigint
+  minHumidity: bigint
+  maxHumidity: bigint
+  minPressure: bigint
+  maxPressure: bigint
   deadline: bigint
   status: EscrowStatus
   verified: boolean
@@ -20,9 +24,13 @@ export interface EscrowData {
 export interface VerificationData {
   currentGPS: string
   temperature: bigint
+  humidity: bigint
+  pressure: bigint
   timestamp: bigint
   gpsMatched: boolean
   temperatureValid: boolean
+  humidityValid: boolean
+  pressureValid: boolean
 }
 
 export const getEscrowContract = async (readonly: boolean = false): Promise<ethers.Contract | null> => {
@@ -83,6 +91,10 @@ export const createEscrow = async (
   destinationGPS: string,
   minTemperature: number,
   maxTemperature: number,
+  minHumidity: number,
+  maxHumidity: number,
+  minPressure: number,
+  maxPressure: number,
   deadlineDays: number
 ): Promise<string> => {
   try {
@@ -93,15 +105,23 @@ export const createEscrow = async (
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineDays * 24 * 60 * 60)
     
-    // Convert temperature to Celsius * 100
+    // Convert values to contract format (value * 100)
     const minTemp = BigInt(Math.round(minTemperature * 100))
     const maxTemp = BigInt(Math.round(maxTemperature * 100))
+    const minHum = BigInt(Math.round(minHumidity * 100))
+    const maxHum = BigInt(Math.round(maxHumidity * 100))
+    const minPres = BigInt(Math.round(minPressure * 100))
+    const maxPres = BigInt(Math.round(maxPressure * 100))
 
     console.log('Creating escrow request with params:', {
       seller: sellerAddress,
       destinationGPS,
       minTemp: minTemp.toString(),
       maxTemp: maxTemp.toString(),
+      minHumidity: minHum.toString(),
+      maxHumidity: maxHum.toString(),
+      minPressure: minPres.toString(),
+      maxPressure: maxPres.toString(),
       deadline: deadline.toString()
     })
 
@@ -111,6 +131,10 @@ export const createEscrow = async (
       destinationGPS,
       minTemp,
       maxTemp,
+      minHum,
+      maxHum,
+      minPres,
+      maxPres,
       deadline
     )
 
@@ -199,6 +223,10 @@ export const getEscrow = async (escrowId: string | number): Promise<EscrowData |
       destinationGPS: escrow.destinationGPS,
       minTemperature: escrow.minTemperature,
       maxTemperature: escrow.maxTemperature,
+      minHumidity: escrow.minHumidity,
+      maxHumidity: escrow.maxHumidity,
+      minPressure: escrow.minPressure,
+      maxPressure: escrow.maxPressure,
       deadline: escrow.deadline,
       status: Number(escrow.status) as EscrowStatus,
       verified: escrow.verified,
@@ -222,9 +250,13 @@ export const getVerification = async (escrowId: string | number): Promise<Verifi
     return {
       currentGPS: verification.currentGPS,
       temperature: verification.temperature,
+      humidity: verification.humidity,
+      pressure: verification.pressure,
       timestamp: verification.timestamp,
       gpsMatched: verification.gpsMatched,
-      temperatureValid: verification.temperatureValid
+      temperatureValid: verification.temperatureValid,
+      humidityValid: verification.humidityValid,
+      pressureValid: verification.pressureValid
     }
   } catch (error) {
     console.error('Error getting verification:', error)
