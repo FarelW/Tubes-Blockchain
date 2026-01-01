@@ -105,7 +105,7 @@ class BlockchainService {
       logger.info(`Processing verification for escrow ${escrowId}`)
       logger.info(`Current status: ${escrow.status}, Verified: ${escrow.verified}`)
       logger.info(`Destination GPS: ${escrow.destinationGPS}`)
-      logger.info(`Temperature range: ${escrow.minTemperature/100}°C - ${escrow.maxTemperature/100}°C`)
+      logger.info(`Temperature range: ${Number(escrow.minTemperature)/100}°C - ${Number(escrow.maxTemperature)/100}°C`)
 
       // Check if escrow is already verified or completed
       if (escrow.verified) {
@@ -113,10 +113,10 @@ class BlockchainService {
         return { alreadyVerified: true }
       }
 
-      // Check if escrow status is Delivered (3) - only verify if status is Delivered
-      if (escrow.status !== 3) { // 3 = Delivered
-        logger.warn(`Escrow ${escrowId} status is ${escrow.status}, not Delivered (3). Skipping verification.`)
-        return { statusNotReady: true, currentStatus: escrow.status }
+      // Check if escrow status is Delivered (5) - only verify if status is Delivered
+      if (Number(escrow.status) !== 5) { // 5 = Delivered
+        logger.warn(`Escrow ${escrowId} status is ${escrow.status}, not Delivered (5). Skipping verification.`)
+        return { statusNotReady: true, currentStatus: Number(escrow.status) }
       }
 
       // Check if dummy IoT simulation is active - wait a bit if not ready
@@ -153,9 +153,9 @@ class BlockchainService {
       await this.submitVerification(
         escrowId,
         `${iotData.gps.latitude},${iotData.gps.longitude}`,
-        Math.round(iotData.temperature * 100),
-        Math.round(iotData.humidity * 100),
-        Math.round(iotData.pressure * 100),
+        BigInt(Math.round(iotData.temperature * 100)),
+        BigInt(Math.round(iotData.humidity * 100)),
+        BigInt(Math.round(iotData.pressure * 100)),
         validation.gpsMatched,
         validation.temperatureValid,
         validation.humidityValid,

@@ -465,8 +465,8 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
       return res.status(400).json({
         error: 'Status Verified (4) requires oracle verification. Please use the verification endpoint or ensure oracle processes the verification request.'
       })
-    } else if (targetStatus === 5 && (currentStatus === 3 || currentStatus === 4)) {
-      // Delivered/Verified -> Completed: Trigger oracle verification first
+    } else if (targetStatus === 6 && currentStatus === 5) {
+      // Delivered (5) -> Completed (6): Trigger oracle verification first
       try {
         logger.info(`Admin triggered verification for escrow ${escrowId}`)
         
