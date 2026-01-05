@@ -540,14 +540,13 @@ contract EscrowContract {
     }
 
     /**
-     * @dev Clear all user escrows mappings (only owner)
-     * WARNING: This will clear escrow lists for ALL users
-     * Use with caution - this makes existing escrows inaccessible via getUserEscrows()
+     * @dev Clear all user escrows mappings - NOT SUPPORTED
+     * Solidity doesn't support iterating over mappings, so this operation cannot be performed.
+     * To clear user escrows, use clearUserEscrows(address) for specific addresses,
+     * or deploy a new contract for a complete reset.
      */
     function clearAllUserEscrows() external onlyOwner {
-        // Note: Solidity doesn't support iterating over mappings
-        // This function can only clear known addresses
-        // For a complete reset, you may need to deploy a new contract
+        revert("Not supported: Use clearUserEscrows(address) for specific users or deploy new contract");
     }
 
     /**
