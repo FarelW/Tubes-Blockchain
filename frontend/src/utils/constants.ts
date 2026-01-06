@@ -1,7 +1,5 @@
-// Contract addresses (update after deployment)
-export const ESCROW_CONTRACT_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+export const ESCROW_CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 
-// Network configuration
 export const NETWORK_CONFIG = {
   chainId: 31337, // Hardhat local network
   chainName: 'Localhost (Hardhat)',
@@ -9,7 +7,6 @@ export const NETWORK_CONFIG = {
   blockExplorer: ''
 }
 
-// Escrow status enum (should match smart contract)
 export enum EscrowStatus {
   Created = 0,        // Shipper sends request (no payment yet)
   PriceProposed = 1,  // Logistics proposed price (waiting for shipper payment)
@@ -22,9 +19,7 @@ export enum EscrowStatus {
   Disputed = 8        // Dispute raised
 }
 
-// Contract ABI (matches EscrowContract.sol)
 export const ESCROW_CONTRACT_ABI = [
-  // Events
   'event EscrowCreated(uint256 indexed escrowId, address indexed buyer, address indexed seller, string destinationGPS, uint256 deadline)',
   'event PriceProposed(uint256 indexed escrowId, address indexed seller, uint256 amount)',
   'event PriceRejected(uint256 indexed escrowId, address indexed seller)',
@@ -38,7 +33,6 @@ export const ESCROW_CONTRACT_ABI = [
   'event EscrowRefunded(uint256 indexed escrowId, address indexed buyer, uint256 amount)',
   'event StatusUpdated(uint256 indexed escrowId, uint8 oldStatus, uint8 newStatus)',
 
-  // Read functions
   'function getEscrow(uint256 escrowId) view returns (tuple(uint256 id, address buyer, address seller, uint256 amount, string destinationGPS, int256 minTemperature, int256 maxTemperature, int256 minHumidity, int256 maxHumidity, int256 minPressure, int256 maxPressure, uint256 deadline, uint8 status, bool verified, uint256 createdAt, uint256 verifiedAt))',
   'function getVerification(uint256 escrowId) view returns (tuple(string currentGPS, int256 temperature, int256 humidity, int256 pressure, uint256 timestamp, bool gpsMatched, bool temperatureValid, bool humidityValid, bool pressureValid))',
   'function getUserEscrows(address user) view returns (uint256[])',
@@ -48,7 +42,6 @@ export const ESCROW_CONTRACT_ABI = [
   'function oracle() view returns (address)',
   'function owner() view returns (address)',
 
-  // Write functions
   'function createEscrow(address seller, string destinationGPS, int256 minTemperature, int256 maxTemperature, int256 minHumidity, int256 maxHumidity, int256 minPressure, int256 maxPressure, uint256 deadline) returns (uint256)',
   'function setPriceAndApprove(uint256 escrowId, uint256 amount)',
   'function rejectPrice(uint256 escrowId)',
@@ -62,13 +55,11 @@ export const ESCROW_CONTRACT_ABI = [
   'function adminUpdateStatus(uint256 escrowId, uint8 newStatus)'
 ]
 
-// Oracle configuration
 export const ORACLE_CONFIG = {
   endpoint: 'http://localhost:3001/api/oracle',
-  pollingInterval: 5000 // 5 seconds
+  pollingInterval: 5000
 }
 
-// Helper function to get status label
 export const getStatusLabel = (status: EscrowStatus): string => {
   const labels: Record<EscrowStatus, string> = {
     [EscrowStatus.Created]: 'Send Request',
@@ -84,7 +75,6 @@ export const getStatusLabel = (status: EscrowStatus): string => {
   return labels[status] || 'Unknown'
 }
 
-// Helper function to get status color
 export const getStatusColor = (status: EscrowStatus): string => {
   const colors: Record<EscrowStatus, string> = {
     [EscrowStatus.Created]: '#9e9e9e',

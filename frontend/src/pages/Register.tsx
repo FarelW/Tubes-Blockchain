@@ -36,7 +36,6 @@ function Register() {
     setConnectingWallet(true)
 
     try {
-      // Request account access - MetaMask will show popup for user to select account
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       
       if (accounts && accounts.length > 0) {
@@ -98,7 +97,6 @@ function Register() {
       }
 
       const provider = new ethers.BrowserProvider(window.ethereum)
-      // Get signer for the selected account
       const signer = await provider.getSigner(selectedAccount)
       const timestamp = Date.now()
       const message = `Logistics Escrow Registration\n\nUsername: ${username}\nEmail: ${email}\nRole: ${selectedRole}\nAddress: ${walletAddress}\nTimestamp: ${timestamp}`

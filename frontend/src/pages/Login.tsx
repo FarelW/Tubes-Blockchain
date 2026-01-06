@@ -23,25 +23,21 @@ function Login() {
     setIsLoggingIn(true)
 
     try {
-      // Login via API
       const result = await loginAPI({
         username,
         password
       })
 
       if (result.success && result.token && result.user) {
-        // Save token and user info
         localStorage.setItem('authToken', result.token)
         localStorage.setItem('user', JSON.stringify(result.user))
         localStorage.setItem('selectedRole', result.user.role)
 
-        // Update auth context with wallet address from credentials
         setAuthenticatedAccount(result.user.walletAddress || null)
         setAuthenticatedRole(result.user.role as any)
         setIsAuthenticated(true)
 
         showToast('Login successful!', 'success')
-        // Navigate to dashboard
         navigate('/dashboard')
       }
     } catch (error: any) {

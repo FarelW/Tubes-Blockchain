@@ -110,7 +110,6 @@ export const addHardhatNetwork = async (): Promise<boolean> => {
     return true
   } catch (error: any) {
     if (error.code === 4902) {
-      // Chain not added, but request was sent
       return true
     }
     console.error('Error adding network:', error)
@@ -124,7 +123,6 @@ export const switchToHardhatNetwork = async (): Promise<boolean> => {
   }
 
   try {
-    // Try to switch to the network
     await window.ethereum.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: '0x7A69' }] // 31337 in hex
@@ -132,7 +130,6 @@ export const switchToHardhatNetwork = async (): Promise<boolean> => {
     return true
   } catch (error: any) {
     if (error.code === 4902) {
-      // Chain not added, add it first
       return await addHardhatNetwork()
     }
     console.error('Error switching network:', error)

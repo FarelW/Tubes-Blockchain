@@ -7,15 +7,12 @@ async function resetDatabase() {
   try {
     console.log('Starting database reset...')
 
-    // Delete all sessions first (to avoid foreign key constraint issues)
     await dbRun('DELETE FROM sessions')
     console.log('All sessions deleted')
 
-    // Delete all users except default accounts (admin, shipper, logistics)
     await dbRun("DELETE FROM users WHERE username NOT IN ('admin', 'shipper', 'logistics')")
     console.log('All non-default users deleted')
 
-    // Ensure default accounts exist (admin, shipper, logistics)
     const { User } = await import('../models/User.js')
     const defaultPassword = '12345678'
     const hashedPassword = await bcrypt.hash(defaultPassword, 10)
@@ -48,13 +45,11 @@ async function resetDatabase() {
       const existingUser = await User.findByUsername(account.username)
 
       if (!existingUser) {
-        // Create user if doesn't exist
         await User.create(account)
         console.log(`${account.role} account created: ${account.username}`)
         console.log(`  Password: ${defaultPassword}`)
         console.log(`  Wallet: ${account.walletAddress}`)
       } else {
-        // Update password and wallet if user exists
         await User.updatePassword(existingUser.id, defaultPassword)
         await User.update(existingUser.id, {
           username: account.username,
@@ -68,7 +63,6 @@ async function resetDatabase() {
       }
     }
 
-    // Reset escrow counter in smart contract
     await resetEscrowCounter()
 
     console.log('Database reset completed successfully!')
@@ -111,7 +105,6 @@ async function resetEscrowCounter() {
     const provider = new ethers.JsonRpcProvider(config.RPC_URL)
     const wallet = new ethers.Wallet(config.ORACLE_PRIVATE_KEY, provider)
 
-    // Contract ABI for reset functions
     const contractABI = [
       "function resetEscrowCounter() external",
       "function clearUserEscrows(address _user) external",
@@ -126,7 +119,6 @@ async function resetEscrowCounter() {
       wallet
     )
 
-    // Check if wallet is owner
     const owner = await contract.owner()
     if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
       console.log(`Warning: Oracle wallet (${wallet.address}) is not the contract owner (${owner}).`)
@@ -135,7 +127,6 @@ async function resetEscrowCounter() {
       return
     }
 
-    // Get current escrow counter
     const currentCounter = await contract.escrowCounter()
     console.log(`Current escrow counter: ${currentCounter.toString()}`)
 
@@ -144,11 +135,9 @@ async function resetEscrowCounter() {
       return
     }
 
-    // Get all users from database to clear their escrows
     const { User } = await import('../models/User.js')
     const allUsers = await User.findAll()
 
-    // Collect unique wallet addresses
     const walletAddresses = new Set()
     allUsers.forEach(user => {
       if (user.wallet_address) {
@@ -156,16 +145,14 @@ async function resetEscrowCounter() {
       }
     })
 
-    // Also try to get escrows for common addresses (Hardhat default accounts)
     const commonAddresses = [
-      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Account 0
-      '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', // Account 1
-      '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC', // Account 2
-      '0x90F79bf6EB2c4f870365E785982E1f101E93b906', // Account 3
-      '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65', // Account 4
+      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+      '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+      '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
     ]
 
-    // Try to get escrows for common addresses and add to set
     for (const addr of commonAddresses) {
       try {
         const escrows = await contract.getUserEscrows(addr)
@@ -174,11 +161,9 @@ async function resetEscrowCounter() {
           console.log(`Found ${escrows.length} escrows for address ${addr}`)
         }
       } catch (error) {
-        // Ignore errors for addresses without escrows
       }
     }
 
-    // Clear user escrows for all found addresses
     console.log(`Clearing user escrows for ${walletAddresses.size} addresses...`)
     for (const addr of walletAddresses) {
       try {
@@ -193,7 +178,6 @@ async function resetEscrowCounter() {
       }
     }
 
-    // Reset escrow counter
     console.log('Resetting escrow counter...')
     const tx = await contract.resetEscrowCounter()
     console.log(`Transaction sent: ${tx.hash}`)
@@ -201,7 +185,6 @@ async function resetEscrowCounter() {
     const receipt = await tx.wait()
     console.log(`Transaction confirmed in block ${receipt.blockNumber}`)
 
-    // Verify reset
     const newCounter = await contract.escrowCounter()
     console.log(`Escrow counter reset to: ${newCounter.toString()}`)
     console.log('Escrow counter and user escrows reset completed successfully!')

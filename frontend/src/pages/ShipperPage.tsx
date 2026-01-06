@@ -72,7 +72,6 @@ function ShipperPage() {
 
       const escrowPromises = escrowIds.map(async (id) => {
         const escrowData = await getEscrow(id.toString())
-        // Only show escrows where buyer (shipper) matches registered wallet address
         if (!escrowData || escrowData.buyer.toLowerCase() !== walletAddress.toLowerCase()) return null
 
         return {
@@ -107,18 +106,15 @@ function ShipperPage() {
 
   const handleFundEscrow = async (escrowId: string, amount: string) => {
     try {
-      // Verify wallet connection
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed')
       }
 
-      // Request account access
       const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send('eth_requestAccounts', [])
       const signer = await provider.getSigner()
       const connectedAddress = await signer.getAddress()
 
-      // Check if connected wallet matches registered wallet
       if (walletAddress && connectedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
         throw new Error(`Connected wallet (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}) does not match your registered shipper wallet (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}). Please switch to your registered account in MetaMask.`)
       }

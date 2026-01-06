@@ -155,20 +155,6 @@ contract EscrowContract {
         escrowCounter = 0;
     }
 
-    /**
-     * @dev Create a new escrow request (no payment yet)
-     * Shipper creates request, logistics will set price later
-     * @param _seller Address of the seller (logistics)
-     * @param _destinationGPS GPS coordinates of destination (format: "lat,lng")
-     * @param _minTemperature Minimum acceptable temperature (Celsius * 100)
-     * @param _maxTemperature Maximum acceptable temperature (Celsius * 100)
-     * @param _minHumidity Minimum acceptable humidity (% * 100)
-     * @param _maxHumidity Maximum acceptable humidity (% * 100)
-     * @param _minPressure Minimum acceptable pressure (hPa * 100)
-     * @param _maxPressure Maximum acceptable pressure (hPa * 100)
-     * @param _deadline Deadline timestamp for delivery
-     * @return escrowId The ID of the created escrow
-     */
     function createEscrow(
         address _seller,
         string memory _destinationGPS,
@@ -236,12 +222,6 @@ contract EscrowContract {
         return escrowId;
     }
 
-    /**
-     * @dev Logistics sets price and approves the escrow
-     * Changes status from Created to PriceProposed
-     * @param _escrowId ID of the escrow
-     * @param _amount Price in wei
-     */
     function setPriceAndApprove(
         uint256 _escrowId,
         uint256 _amount
@@ -259,11 +239,6 @@ contract EscrowContract {
         emit PriceProposed(_escrowId, msg.sender, _amount);
     }
 
-    /**
-     * @dev Logistics rejects the escrow request
-     * Changes status from Created to PriceRejected
-     * @param _escrowId ID of the escrow
-     */
     function rejectPrice(
         uint256 _escrowId
     )
@@ -276,11 +251,6 @@ contract EscrowContract {
         emit PriceRejected(_escrowId, msg.sender);
     }
 
-    /**
-     * @dev Shipper pays for the escrow after logistics approved price
-     * Changes status from PriceProposed to Funded
-     * @param _escrowId ID of the escrow
-     */
     function fundEscrow(
         uint256 _escrowId
     )
@@ -297,11 +267,6 @@ contract EscrowContract {
         emit EscrowFunded(_escrowId, msg.value);
     }
 
-    /**
-     * @dev Approve escrow by seller (logistics) - DEPRECATED
-     * Use setPriceAndApprove instead
-     * @param _escrowId ID of the escrow to approve
-     */
     function approveEscrow(
         uint256 _escrowId
     )
@@ -310,7 +275,6 @@ contract EscrowContract {
         onlySeller(_escrowId)
         inStatus(_escrowId, EscrowStatus.Created)
     {
-        // This function is deprecated, use setPriceAndApprove instead
         revert("Use setPriceAndApprove to set price and approve");
     }
 
@@ -355,19 +319,6 @@ contract EscrowContract {
         emit VerificationRequested(_escrowId, msg.sender);
     }
 
-    /**
-     * @dev Submit verification result from oracle
-     * Validates GPS, temperature, humidity, and pressure, auto-releases funds if verified
-     * @param _escrowId ID of the escrow
-     * @param _currentGPS Current GPS coordinates
-     * @param _temperature Current temperature (Celsius * 100)
-     * @param _humidity Current humidity (% * 100)
-     * @param _pressure Current pressure (hPa * 100)
-     * @param _gpsMatched Whether GPS matches destination
-     * @param _temperatureValid Whether temperature is within range
-     * @param _humidityValid Whether humidity is within range
-     * @param _pressureValid Whether pressure is within range
-     */
     function verifyDelivery(
         uint256 _escrowId,
         string memory _currentGPS,
@@ -403,13 +354,9 @@ contract EscrowContract {
         escrow.verifiedAt = block.timestamp;
 
         if (verified) {
-            // Go directly to Completed and release funds
             escrow.status = EscrowStatus.Completed;
             escrow.verified = true;
             _releaseFunds(_escrowId);
-        } else {
-            // If verification fails, status remains Delivered
-            // Admin can manually refund or retry verification
         }
 
         emit DeliveryVerified(
@@ -438,10 +385,6 @@ contract EscrowContract {
         emit FundsReleased(_escrowId, seller, amount);
     }
 
-    /**
-     * @dev Refund buyer if deadline passed and delivery not verified
-     * @param _escrowId ID of the escrow to refund
-     */
     function refund(
         uint256 _escrowId
     ) external escrowExists(_escrowId) {
@@ -457,7 +400,6 @@ contract EscrowContract {
             "Only buyer, owner, or oracle can refund"
         );
         
-        // Only check deadline if called by buyer (admin/oracle can refund anytime)
         if (msg.sender == escrow.buyer) {
             require(block.timestamp > escrow.deadline, "Deadline not yet passed");
         }
@@ -521,43 +463,17 @@ contract EscrowContract {
         return address(this).balance;
     }
 
-    /**
-     * @dev Reset escrow counter (only owner)
-     * WARNING: This will not delete existing escrows, but will reset the counter
-     * New escrows will start from ID 1 again
-     */
     function resetEscrowCounter() external onlyOwner {
         escrowCounter = 0;
     }
 
-    /**
-     * @dev Clear user escrows mapping for a specific address (only owner)
-     * This removes all escrow IDs from the user's escrow list
-     * @param _user Address of the user whose escrows should be cleared
-     */
     function clearUserEscrows(address _user) external onlyOwner {
         delete userEscrows[_user];
     }
 
-    /**
-     * @dev Clear all user escrows mappings (only owner)
-     * WARNING: This will clear escrow lists for ALL users
-     * Use with caution - this makes existing escrows inaccessible via getUserEscrows()
-     */
     function clearAllUserEscrows() external onlyOwner {
-        // Note: Solidity doesn't support iterating over mappings
-        // This function can only clear known addresses
-        // For a complete reset, you may need to deploy a new contract
     }
 
-    /**
-     * @dev Admin function to manually update escrow status (only owner or oracle)
-     * This allows admin to change status for any escrow to any status
-     * Use with caution - this bypasses normal workflow
-     * If status is changed to Completed, funds will be automatically released to seller
-     * @param _escrowId ID of the escrow
-     * @param _newStatus New status to set
-     */
     function adminUpdateStatus(
         uint256 _escrowId,
         EscrowStatus _newStatus
@@ -570,7 +486,6 @@ contract EscrowContract {
         Escrow storage escrow = escrows[_escrowId];
         EscrowStatus oldStatus = escrow.status;
         
-        // If changing to Completed, release funds to seller
         if (_newStatus == EscrowStatus.Completed && oldStatus != EscrowStatus.Completed) {
             require(
                 oldStatus != EscrowStatus.Refunded && oldStatus != EscrowStatus.Completed,
@@ -593,7 +508,6 @@ contract EscrowContract {
             
             emit FundsReleased(_escrowId, seller, amount);
         } else if (_newStatus == EscrowStatus.Refunded && oldStatus != EscrowStatus.Refunded) {
-            // If changing to Refunded, refund buyer
             require(
                 oldStatus != EscrowStatus.Completed && oldStatus != EscrowStatus.Refunded,
                 "Cannot refund completed or already refunded escrow"

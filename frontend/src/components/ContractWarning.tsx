@@ -12,10 +12,8 @@ function ContractWarning() {
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
 
   useEffect(() => {
-    // Check contract once on mount
     checkContract()
     
-    // Only re-check when network changes
     if (window.ethereum) {
       const handleChainChanged = () => {
         checkContract()
@@ -40,12 +38,10 @@ function ContractWarning() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
 
-      // Check network
       const network = await provider.getNetwork()
       setCurrentChainId(Number(network.chainId))
       setNetworkMismatch(Number(network.chainId) !== NETWORK_CONFIG.chainId)
 
-      // Check contract
       const code = await provider.getCode(ESCROW_CONTRACT_ADDRESS)
       setIsContract(code !== '0x' && code.length > 2)
     } catch (error) {
@@ -63,7 +59,6 @@ function ContractWarning() {
   const handleSwitchNetwork = async () => {
     try {
       await switchToHardhatNetwork()
-      // Network will switch, component will re-check automatically
     } catch (error: any) {
       showToast(`Failed to switch network: ${error.message || 'Please switch manually in MetaMask'}`, 'error')
     }

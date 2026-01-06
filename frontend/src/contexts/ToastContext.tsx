@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
+import type { ReactNode } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
@@ -34,10 +35,9 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   const showToast = useCallback((message: string, type: ToastType = 'error') => {
     const id = Math.random().toString(36).substring(7)
     const newToast: Toast = { id, message, type }
-    
+
     setToasts((prev) => [...prev, newToast])
-    
-    // Auto remove after 5 seconds
+
     setTimeout(() => {
       removeToast(id)
     }, 5000)

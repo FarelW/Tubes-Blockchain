@@ -17,7 +17,6 @@ function CreateEscrow() {
   const [loadingLogistics, setLoadingLogistics] = useState(true)
 
   useEffect(() => {
-    // Get wallet address from authenticatedAccount or localStorage user object
     const savedUser = localStorage.getItem('user')
     if (savedUser) {
       try {
@@ -90,19 +89,16 @@ function CreateEscrow() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation: Must have wallet connected
     if (!walletAddress) {
       showToast('Please connect your wallet in the Account page first', 'error')
       return
     }
 
-    // Validation: Wallet address must be valid
     if (!validateAddress(walletAddress)) {
       showToast('Your wallet address is not valid. Please update it in the Account page.', 'error')
       return
     }
 
-    // Validation: Logistics address must be valid
     if (!validateAddress(formData.logisticsAddress)) {
       showToast('Logistics address is not valid. Please select a valid logistics provider.', 'error')
       return
@@ -113,7 +109,6 @@ function CreateEscrow() {
       return
     }
 
-    // Request account access - this will show MetaMask popup
     let account: string | null = null
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
@@ -134,7 +129,6 @@ function CreateEscrow() {
       return
     }
 
-    // CRITICAL: Validate that connected wallet matches registered wallet address
     if (walletAddress && account.toLowerCase() !== walletAddress.toLowerCase()) {
       showToast(
         `Connected wallet (${account.slice(0, 6)}...${account.slice(-4)}) does not match your registered shipper wallet (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}). Please switch to your registered account in MetaMask or update your wallet address in the Account page.`,

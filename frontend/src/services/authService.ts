@@ -51,9 +51,6 @@ export interface AuthResponse {
   error?: string
 }
 
-/**
- * Register new user
- */
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/register`, {
@@ -77,9 +74,6 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
   }
 }
 
-/**
- * Login user
- */
 export const login = async (data: LoginData): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/login`, {
@@ -103,9 +97,6 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
   }
 }
 
-/**
- * Verify session token
- */
 export const verifyToken = async (token: string): Promise<AuthResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/verify`, {
@@ -128,9 +119,6 @@ export const verifyToken = async (token: string): Promise<AuthResponse> => {
   }
 }
 
-/**
- * Logout user
- */
 export const logout = async (token: string): Promise<void> => {
   try {
     await fetch(`${API_BASE_URL}/logout`, {
@@ -144,9 +132,6 @@ export const logout = async (token: string): Promise<void> => {
   }
 }
 
-/**
- * Get wallet address
- */
 export const getWallet = async (token: string): Promise<WalletResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/wallet`, {
@@ -169,9 +154,6 @@ export const getWallet = async (token: string): Promise<WalletResponse> => {
   }
 }
 
-/**
- * Get logistics users with validated wallet
- */
 export const getLogistics = async (token: string): Promise<{ success: boolean; logistics?: Array<{ id: number; username: string; email: string; walletAddress: string }>; error?: string }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/logistics`, {
@@ -194,9 +176,6 @@ export const getLogistics = async (token: string): Promise<{ success: boolean; l
   }
 }
 
-/**
- * Update wallet address
- */
 export const updateWallet = async (data: UpdateWalletData, token: string): Promise<UpdateWalletResponse> => {
   try {
     const response = await fetch(`${API_BASE_URL}/wallet`, {

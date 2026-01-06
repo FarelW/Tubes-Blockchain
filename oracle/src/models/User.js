@@ -8,7 +8,7 @@ export class User {
       `INSERT INTO users (username, email, password, role, wallet_address) VALUES (?, ?, ?, ?, ?)`,
       [username, email, hashedPassword, role, walletAddress]
     )
-    
+
     return this.findById(result.lastID)
   }
 
@@ -30,7 +30,6 @@ export class User {
   }
 
   static async findByWalletAddress(walletAddress) {
-    // Normalize to lowercase for case-insensitive comparison
     const normalizedAddress = walletAddress.toLowerCase()
     return dbGet('SELECT * FROM users WHERE LOWER(wallet_address) = ?', [normalizedAddress])
   }

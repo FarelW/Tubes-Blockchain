@@ -82,8 +82,8 @@ class IoTService {
         longitude: 106.8456 + (Math.random() - 0.5) * 0.001
       },
       temperature: 20 + Math.random() * 10,
-      humidity: 40 + Math.random() * 30,        // 40-70% humidity
-      pressure: 1000 + Math.random() * 30,      // 1000-1030 hPa
+      humidity: 40 + Math.random() * 30,
+      pressure: 1000 + Math.random() * 30,
       timestamp: Date.now(),
       sensorId: 'mock-sensor-001'
     };

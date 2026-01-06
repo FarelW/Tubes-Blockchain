@@ -60,18 +60,14 @@ function WalletConnect() {
     if (!window.ethereum) return
     
     try {
-      // Request to switch account
       await window.ethereum.request({
         method: 'wallet_requestPermissions',
         params: [{ eth_accounts: {} }]
       })
       
-      // Then request accounts again
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       
-      // Find the target account in the list
       if (accounts.includes(targetAccount)) {
-        // MetaMask will use the selected account
         setAccount(targetAccount)
         setShowAccountSwitcher(false)
         window.location.reload() // Reload to update everything

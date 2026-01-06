@@ -44,7 +44,6 @@ function LogisticsPage() {
   const loadWalletAddress = async () => {
     setWalletLoading(true)
     try {
-      // Get wallet address from authenticated account or localStorage
       const userStr = localStorage.getItem('user')
       if (userStr) {
         const user = JSON.parse(userStr)
@@ -83,7 +82,6 @@ function LogisticsPage() {
 
       const escrowPromises = escrowIds.map(async (id) => {
         const escrowData = await getEscrow(id.toString())
-        // Only show escrows where seller (logistics) matches authenticated wallet
         if (!escrowData || escrowData.seller.toLowerCase() !== walletAddress.toLowerCase()) return null
 
         return {
@@ -112,7 +110,6 @@ function LogisticsPage() {
   const handleSetPriceAndApprove = async () => {
     if (!selectedEscrow) return
 
-    // Validate price
     const amount = parseFloat(priceAmount)
     if (isNaN(amount) || amount <= 0) {
       showToast('Price must be greater than 0', 'error')
@@ -120,29 +117,24 @@ function LogisticsPage() {
     }
 
     try {
-      // Verify wallet connection and match with escrow seller
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed')
       }
 
-      // Request account access to ensure we have the latest selected account
       const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send('eth_requestAccounts', [])
       const signer = await provider.getSigner()
       const connectedAddress = await signer.getAddress()
 
-      // Get escrow data to verify seller address
       const escrowData = await getEscrow(selectedEscrow.id)
       if (!escrowData) {
         throw new Error('Escrow not found')
       }
 
-      // Check if connected wallet matches registered wallet first
       if (walletAddress && connectedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
         throw new Error(`You are connected with wallet ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}, but your registered logistics wallet is ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}. Please switch to your logistics account (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}) in MetaMask.`)
       }
 
-      // Check if connected wallet matches seller address in escrow
       if (connectedAddress.toLowerCase() !== escrowData.seller.toLowerCase()) {
         throw new Error(`Connected wallet (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}) does not match seller address in escrow (${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)}). Please switch to account ${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)} in MetaMask.`)
       }
@@ -152,7 +144,7 @@ function LogisticsPage() {
       showToast(`Price set to ${priceAmount} ETH and escrow approved! Shipper can now pay.`, 'success')
       setSelectedEscrow(null)
       setPriceAmount('')
-      await loadEscrows(false) // Don't show loading spinner on refresh
+      await loadEscrows(false)
     } catch (error: any) {
       showToast(error.message || 'Error setting price and approving', 'error')
     } finally {
@@ -162,29 +154,24 @@ function LogisticsPage() {
 
   const handleReject = async (escrowId: string) => {
     try {
-      // Verify wallet connection and match with escrow seller
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed')
       }
 
-      // Request account access to ensure we have the latest selected account
       const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send('eth_requestAccounts', [])
       const signer = await provider.getSigner()
       const connectedAddress = await signer.getAddress()
 
-      // Get escrow data to verify seller address
       const escrowData = await getEscrow(escrowId)
       if (!escrowData) {
         throw new Error('Escrow not found')
       }
 
-      // Check if connected wallet matches registered wallet first
       if (walletAddress && connectedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
         throw new Error(`You are connected with wallet ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}, but your registered logistics wallet is ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}. Please switch to your logistics account (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}) in MetaMask.`)
       }
 
-      // Check if connected wallet matches seller address in escrow
       if (connectedAddress.toLowerCase() !== escrowData.seller.toLowerCase()) {
         throw new Error(`Connected wallet (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}) does not match seller address in escrow (${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)}). Please switch to account ${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)} in MetaMask.`)
       }
@@ -192,7 +179,7 @@ function LogisticsPage() {
       setRejecting(true)
       await rejectPrice(escrowId)
       showToast('Escrow request rejected.', 'success')
-      await loadEscrows(false) // Don't show loading spinner on refresh
+      await loadEscrows(false)
     } catch (error: any) {
       showToast(error.message || 'Error rejecting escrow', 'error')
     } finally {
@@ -202,36 +189,31 @@ function LogisticsPage() {
 
   const handleStartDelivery = async (escrowId: string) => {
     try {
-      // Verify wallet connection and match with escrow seller
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed')
       }
 
-      // Request account access to ensure we have the latest selected account
       const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send('eth_requestAccounts', [])
       const signer = await provider.getSigner()
       const connectedAddress = await signer.getAddress()
 
-      // Get escrow data to verify seller address
       const escrowData = await getEscrow(escrowId)
       if (!escrowData) {
         throw new Error('Escrow not found')
       }
 
-      // Check if connected wallet matches registered wallet first
       if (walletAddress && connectedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
         throw new Error(`You are connected with wallet ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}, but your registered logistics wallet is ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}. Please switch to your logistics account (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}) in MetaMask.`)
       }
 
-      // Check if connected wallet matches seller address in escrow
       if (connectedAddress.toLowerCase() !== escrowData.seller.toLowerCase()) {
         throw new Error(`Connected wallet (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}) does not match seller address in escrow (${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)}). Please switch to account ${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)} in MetaMask.`)
       }
 
       await startDelivery(escrowId)
       showToast('Delivery started! Status updated to Delivering.', 'success')
-      await loadEscrows(false) // Don't show loading spinner on refresh
+      await loadEscrows(false)
     } catch (error: any) {
       showToast(error.message || 'Error updating status', 'error')
     }
@@ -239,36 +221,31 @@ function LogisticsPage() {
 
   const handleMarkDelivered = async (escrowId: string) => {
     try {
-      // Verify wallet connection and match with escrow seller
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed')
       }
 
-      // Request account access to ensure we have the latest selected account
       const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send('eth_requestAccounts', [])
       const signer = await provider.getSigner()
       const connectedAddress = await signer.getAddress()
 
-      // Get escrow data to verify seller address
       const escrowData = await getEscrow(escrowId)
       if (!escrowData) {
         throw new Error('Escrow not found')
       }
 
-      // Check if connected wallet matches registered wallet first
       if (walletAddress && connectedAddress.toLowerCase() !== walletAddress.toLowerCase()) {
         throw new Error(`You are connected with wallet ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}, but your registered logistics wallet is ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}. Please switch to your logistics account (${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}) in MetaMask.`)
       }
 
-      // Check if connected wallet matches seller address in escrow
       if (connectedAddress.toLowerCase() !== escrowData.seller.toLowerCase()) {
         throw new Error(`Connected wallet (${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}) does not match seller address in escrow (${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)}). Please switch to account ${escrowData.seller.slice(0, 6)}...${escrowData.seller.slice(-4)} in MetaMask.`)
       }
 
       await markDelivered(escrowId)
       showToast('Marked as delivered! Admin will verify and complete the order.', 'success')
-      await loadEscrows(false) // Don't show loading spinner on refresh
+      await loadEscrows(false)
     } catch (error: any) {
       showToast(error.message || 'Error marking as delivered', 'error')
     }

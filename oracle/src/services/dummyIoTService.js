@@ -8,7 +8,7 @@ class DummyIoTService {
 
   startDeliverySimulation(escrowId, config) {
     const {
-      originGPS = { latitude: -6.1751, longitude: 106.8650 }, // Jakarta origin
+      originGPS = { latitude: -6.1751, longitude: 106.8650 },
       destinationGPS,
       minTemp = 0,
       maxTemp = 30,
@@ -16,10 +16,9 @@ class DummyIoTService {
       maxHumidity = 70,
       minPressure = 980,
       maxPressure = 1030,
-      duration = 60000 // 60 seconds default
+      duration = 60000
     } = config;
 
-    // Parse destination GPS if string
     let destLat, destLng;
     if (typeof destinationGPS === 'string') {
       [destLat, destLng] = destinationGPS.split(',').map(Number);
@@ -66,17 +65,14 @@ class DummyIoTService {
         longitude: originGPS.longitude + (lngStep * stepCount)
       };
 
-      // Temperature simulation with variation
       const baseTemp = minTemp + (maxTemp - minTemp) * 0.5;
       const tempVariation = (Math.random() - 0.5) * 5;
       delivery.temperature = Math.max(minTemp, Math.min(maxTemp, baseTemp + tempVariation));
 
-      // Humidity simulation with variation
       const baseHumidity = minHumidity + (maxHumidity - minHumidity) * 0.5;
       const humidityVariation = (Math.random() - 0.5) * 10;
       delivery.humidity = Math.max(minHumidity, Math.min(maxHumidity, baseHumidity + humidityVariation));
 
-      // Pressure simulation with variation
       const basePressure = minPressure + (maxPressure - minPressure) * 0.5;
       const pressureVariation = (Math.random() - 0.5) * 20;
       delivery.pressure = Math.max(minPressure, Math.min(maxPressure, basePressure + pressureVariation));

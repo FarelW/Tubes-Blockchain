@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { UserRole } from './RoleContext'
 
 interface AuthContextType {
@@ -33,30 +34,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authenticatedRole, setAuthenticatedRole] = useState<UserRole | null>(null)
 
   useEffect(() => {
-    // Check if user was previously authenticated
     const token = localStorage.getItem('authToken')
     const savedUser = localStorage.getItem('user')
-    
+
     if (token && savedUser) {
-      // Verify token with backend
       import('../services/authService').then(({ verifyToken }) => {
         verifyToken(token)
           .then(async (result) => {
             if (result.success && result.user) {
-              // Get wallet address from user credentials
               setAuthenticatedAccount(result.user.walletAddress || null)
               setAuthenticatedRole(result.user.role as UserRole)
               setIsAuthenticated(true)
               localStorage.setItem('selectedRole', result.user.role)
             } else {
-              // Token invalid, clear storage
               localStorage.removeItem('authToken')
               localStorage.removeItem('user')
               localStorage.removeItem('selectedRole')
             }
           })
           .catch(() => {
-            // Token invalid, clear storage
             localStorage.removeItem('authToken')
             localStorage.removeItem('user')
             localStorage.removeItem('selectedRole')
@@ -65,15 +61,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [])
 
-  const verifyWallet = (address: string, role: UserRole): boolean => {
-    // No longer validating against hardcoded addresses
-    // Wallet validation is now done via backend/registered wallet
+  const verifyWallet = (_address: string, _role: UserRole): boolean => {
     return true
   }
 
-  const login = async (role: UserRole): Promise<boolean> => {
-    // This function is no longer used for MetaMask-based login
-    // Login is now handled via username/password in Login.tsx
+  const login = async (_role: UserRole): Promise<boolean> => {
     throw new Error('This login method is deprecated. Please use username/password login.')
   }
 

@@ -376,11 +376,6 @@ router.delete('/dummy-iot', (req, res) => {
   }
 });
 
-/**
- * Admin update escrow status
- * PUT /api/oracle/escrow/:escrowId/status
- * Requires admin authentication
- */
 router.put('/escrow/:escrowId/status', async (req, res) => {
   try {
     const { escrowId } = req.params
@@ -390,7 +385,6 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
       return res.status(401).json({ error: 'Authentication token required' })
     }
 
-    // Verify admin user
     const { Session } = await import('../models/Session.js')
     const { User } = await import('../models/User.js')
     
@@ -408,7 +402,6 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
       return res.status(400).json({ error: 'Status is required' })
     }
 
-    // Check if blockchain service is initialized
     if (!blockchainService.isInitialized()) {
       logger.error('Blockchain service not initialized. Check ORACLE_PRIVATE_KEY and ESCROW_CONTRACT_ADDRESS environment variables.')
       return res.status(500).json({ 
@@ -417,20 +410,13 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
       })
     }
 
-    // Get current escrow status
     const escrow = await blockchainService.getEscrow(escrowId)
     const currentStatus = Number(escrow.status)
     const targetStatus = Number(status)
 
-    // Map status to smart contract functions
-    // Note: Smart contract has access control (onlySeller, onlyBuyer, onlyOracle)
-    // Admin can use oracle wallet to call functions, but some functions still require specific roles
     let result
     
     if (targetStatus === 2 && (currentStatus === 0 || currentStatus === 1)) {
-      // Created/Funded -> InTransit: Use startDelivery
-      // Note: This requires seller role, so we'll try using oracle wallet
-      // If oracle is not the seller, this will fail
       try {
         result = await blockchainService.adminStartDelivery(BigInt(escrowId))
         return res.json({
@@ -445,7 +431,6 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
         })
       }
     } else if (targetStatus === 3 && currentStatus === 2) {
-      // InTransit -> Delivered: Use markDelivered
       try {
         result = await blockchainService.adminMarkDelivered(BigInt(escrowId))
         return res.json({
@@ -460,17 +445,13 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
         })
       }
     } else if (targetStatus === 4 && (currentStatus === 2 || currentStatus === 3)) {
-      // InTransit/Delivered -> Verified: Use verifyDelivery (requires oracle)
-      // For admin, we can manually set to Verified, but it's better to use oracle verification
       return res.status(400).json({
         error: 'Status Verified (4) requires oracle verification. Please use the verification endpoint or ensure oracle processes the verification request.'
       })
     } else if (targetStatus === 6 && currentStatus === 5) {
-      // Delivered (5) -> Completed (6): Trigger oracle verification first
       try {
         logger.info(`Admin triggered verification for escrow ${escrowId}`)
         
-        // Use oracle verification to validate IoT data before completing
         const verificationResult = await blockchainService.processVerificationRequest(BigInt(escrowId))
         
         if (verificationResult.verified) {
@@ -505,7 +486,6 @@ router.put('/escrow/:escrowId/status', async (req, res) => {
         })
       }
     } else {
-      // For other status changes, use adminUpdateStatus if oracle is owner
       try {
         result = await blockchainService.adminUpdateStatus(BigInt(escrowId), targetStatus)
         return res.json({

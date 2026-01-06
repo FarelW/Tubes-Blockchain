@@ -4,10 +4,10 @@ const { ethers } = require("hardhat");
 describe("EscrowContract", function () {
   let escrowContract;
   let owner, oracle, buyer, seller;
-  
+
   const DESTINATION_GPS = "-6.2088,106.8456";
-  const MIN_TEMP = 0; // 0°C
-  const MAX_TEMP = 3000; // 30°C (stored as Celsius * 100)
+  const MIN_TEMP = 0;
+  const MAX_TEMP = 3000;
   const ESCROW_AMOUNT = ethers.parseEther("1.0");
 
   beforeEach(async function () {
@@ -34,7 +34,7 @@ describe("EscrowContract", function () {
 
   describe("Create Escrow", function () {
     it("Should create escrow with correct parameters", async function () {
-      const deadline = Math.floor(Date.now() / 1000) + 86400; // 1 day from now
+      const deadline = Math.floor(Date.now() / 1000) + 86400;
 
       const tx = await escrowContract.connect(buyer).createEscrow(
         seller.address,
@@ -54,7 +54,7 @@ describe("EscrowContract", function () {
       expect(escrow.seller).to.equal(seller.address);
       expect(escrow.amount).to.equal(ESCROW_AMOUNT);
       expect(escrow.destinationGPS).to.equal(DESTINATION_GPS);
-      expect(escrow.status).to.equal(1); // Funded
+      expect(escrow.status).to.equal(1);
     });
 
     it("Should fail if seller is zero address", async function () {
@@ -94,7 +94,7 @@ describe("EscrowContract", function () {
 
     beforeEach(async function () {
       deadline = Math.floor(Date.now() / 1000) + 86400;
-      
+
       await escrowContract.connect(buyer).createEscrow(
         seller.address,
         DESTINATION_GPS,
@@ -111,7 +111,7 @@ describe("EscrowContract", function () {
         .to.emit(escrowContract, "DeliveryStarted");
 
       const escrow = await escrowContract.getEscrow(escrowId);
-      expect(escrow.status).to.equal(2); // InTransit
+      expect(escrow.status).to.equal(2);
     });
 
     it("Should not allow buyer to start delivery", async function () {
@@ -122,12 +122,12 @@ describe("EscrowContract", function () {
 
     it("Should allow seller to mark as delivered", async function () {
       await escrowContract.connect(seller).startDelivery(escrowId);
-      
+
       await expect(escrowContract.connect(seller).markDelivered(escrowId))
         .to.emit(escrowContract, "VerificationRequested");
 
       const escrow = await escrowContract.getEscrow(escrowId);
-      expect(escrow.status).to.equal(3); // Delivered
+      expect(escrow.status).to.equal(3);
     });
   });
 
@@ -137,7 +137,7 @@ describe("EscrowContract", function () {
 
     beforeEach(async function () {
       deadline = Math.floor(Date.now() / 1000) + 86400;
-      
+
       await escrowContract.connect(buyer).createEscrow(
         seller.address,
         DESTINATION_GPS,
@@ -153,7 +153,7 @@ describe("EscrowContract", function () {
 
     it("Should allow oracle to verify delivery", async function () {
       const currentGPS = "-6.2088,106.8456";
-      const temperature = 2500; // 25°C
+      const temperature = 2500;
 
       const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
 
@@ -162,35 +162,34 @@ describe("EscrowContract", function () {
           escrowId,
           currentGPS,
           temperature,
-          true, // GPS matched
-          true  // Temperature valid
+          true,
+          true
         )
       ).to.emit(escrowContract, "DeliveryVerified")
         .withArgs(escrowId, true, true, true);
 
       const escrow = await escrowContract.getEscrow(escrowId);
-      expect(escrow.status).to.equal(5); // Completed
+      expect(escrow.status).to.equal(5);
       expect(escrow.verified).to.equal(true);
 
-      // Check seller received funds
       const sellerBalanceAfter = await ethers.provider.getBalance(seller.address);
       expect(sellerBalanceAfter - sellerBalanceBefore).to.equal(ESCROW_AMOUNT);
     });
 
     it("Should not release funds if verification fails", async function () {
-      const currentGPS = "-6.3000,106.9000"; // Wrong GPS
+      const currentGPS = "-6.3000,106.9000";
       const temperature = 2500;
 
       await escrowContract.connect(oracle).verifyDelivery(
         escrowId,
         currentGPS,
         temperature,
-        false, // GPS not matched
-        true   // Temperature valid
+        false,
+        true
       );
 
       const escrow = await escrowContract.getEscrow(escrowId);
-      expect(escrow.status).to.equal(2); // Still InTransit
+      expect(escrow.status).to.equal(2);
       expect(escrow.verified).to.equal(false);
     });
 
@@ -209,9 +208,8 @@ describe("EscrowContract", function () {
 
   describe("Refund", function () {
     it("Should allow buyer to refund after deadline", async function () {
-      // Get current block timestamp
       const block = await ethers.provider.getBlock("latest");
-      const deadline = block.timestamp + 60; // 60 seconds from current block
+      const deadline = block.timestamp + 60;
 
       await escrowContract.connect(buyer).createEscrow(
         seller.address,
@@ -222,8 +220,7 @@ describe("EscrowContract", function () {
         { value: ESCROW_AMOUNT }
       );
 
-      // Wait for deadline to pass
-      await ethers.provider.send("evm_increaseTime", [120]); // 120 seconds
+      await ethers.provider.send("evm_increaseTime", [120]);
       await ethers.provider.send("evm_mine");
 
       const buyerBalanceBefore = await ethers.provider.getBalance(buyer.address);
@@ -237,7 +234,7 @@ describe("EscrowContract", function () {
       expect(buyerBalanceAfter + gasUsed - buyerBalanceBefore).to.equal(ESCROW_AMOUNT);
 
       const escrow = await escrowContract.getEscrow(1);
-      expect(escrow.status).to.equal(6); // Refunded
+      expect(escrow.status).to.equal(6);
     });
 
     it("Should not allow refund before deadline", async function () {

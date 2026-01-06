@@ -9,21 +9,17 @@ import { Session } from './models/Session.js'
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// Middleware
 app.use(cors())
 app.use(express.json())
 
-// Request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`)
   next()
 })
 
-// Routes
 app.use('/api/oracle', oracleRoutes)
 app.use('/api/auth', authRoutes)
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -32,12 +28,10 @@ app.get('/health', (req, res) => {
   })
 })
 
-// Clean up expired sessions every hour
 setInterval(async () => {
   await Session.deleteExpired()
 }, 60 * 60 * 1000)
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   logger.error('Error:', err.message)
   res.status(500).json({
@@ -46,18 +40,15 @@ app.use((err, req, res, next) => {
   })
 })
 
-// Start server
 app.listen(PORT, async () => {
   logger.info(`Backend service running on port ${PORT}`)
   logger.info(`Health check: http://localhost:${PORT}/health`)
 
-  // Initialize blockchain connection
   try {
     const initialized = await blockchainService.initialize()
     if (initialized) {
       logger.info('✅ Blockchain connection initialized successfully')
 
-      // Start listening for events
       blockchainService.startEventListener()
       logger.info('✅ Event listener started')
     } else {
@@ -75,7 +66,6 @@ app.listen(PORT, async () => {
   }
 })
 
-// Graceful shutdown
 process.on('SIGINT', () => {
   logger.info('Shutting down backend service...')
   blockchainService.stopEventListener()

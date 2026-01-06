@@ -14,10 +14,8 @@ function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     if (authenticatedAccount && window.ethereum) {
-      // Load balance once on mount
       loadBalance(authenticatedAccount)
 
-      // Listen for account changes to update balance
       const handleAccountsChanged = () => {
         if (authenticatedAccount) {
           loadBalance(authenticatedAccount)
@@ -37,12 +35,6 @@ function Layout({ children }: LayoutProps) {
       setBalance(null)
     }
   }, [authenticatedAccount])
-
-  // Listen for account changes and transactions to update balance
-  // Balance will be updated when:
-  // 1. Account changes
-  // 2. User performs a transaction (we'll update manually after transaction)
-  // We don't auto-refresh balance on every block to prevent UI flickering
 
   const loadBalance = async (address: string) => {
     if (!window.ethereum) {

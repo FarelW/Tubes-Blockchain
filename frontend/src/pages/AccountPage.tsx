@@ -8,10 +8,9 @@ import { verifyToken, updateWallet, getWallet } from '../services/authService'
 
 function AccountPage() {
   const location = useLocation()
-  const { authenticatedAccount, authenticatedRole, setAuthenticatedAccount, setAuthenticatedRole, setIsAuthenticated } = useAuth()
+  const { setAuthenticatedAccount, setAuthenticatedRole, setIsAuthenticated } = useAuth()
   const { showToast } = useToast()
   const [walletConnected, setWalletConnected] = useState(false)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [allAccounts, setAllAccounts] = useState<string[]>([])
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
@@ -20,19 +19,14 @@ function AccountPage() {
   const [saving, setSaving] = useState(false)
   const [balance, setBalance] = useState<string | null>(null)
 
-  // Load user info on component mount and when navigating back
   useEffect(() => {
-    // Reset states when component mounts
     setWalletConnected(false)
-    setWalletAddress(null)
     setSelectedAccount(null)
     setAllAccounts([])
-    
-    // Load user info from backend
+
     loadUserInfo()
   }, [location.pathname])
 
-  // Listen for account changes (only if already connected)
   useEffect(() => {
     if (window.ethereum && walletConnected) {
       window.ethereum.on('accountsChanged', handleAccountsChanged)
@@ -50,14 +44,23 @@ function AccountPage() {
 
   const handleAccountsChanged = (accounts: string[]) => {
     if (accounts.length > 0) {
-      setWalletAddress(accounts[0])
       if (!selectedAccount) {
         setSelectedAccount(accounts[0])
       }
     } else {
       setWalletConnected(false)
-      setWalletAddress(null)
       setSelectedAccount(null)
+    }
+  }
+
+  const loadBalance = async (address: string) => {
+    try {
+      if (!window.ethereum) return
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const balance = await provider.getBalance(address)
+      setBalance(ethers.formatEther(balance))
+    } catch (error) {
+      console.error('Error loading balance:', error)
     }
   }
 
@@ -66,10 +69,8 @@ function AccountPage() {
     try {
       const token = localStorage.getItem('authToken')
       if (token) {
-        // Fetch user credentials
         const userResult = await verifyToken(token)
         if (userResult.success && userResult.user) {
-          // Fetch wallet address separately
           const walletResult = await getWallet(token)
           setUserInfo({
             ...userResult.user,
@@ -96,15 +97,12 @@ function AccountPage() {
       await switchToHardhatNetwork()
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Request account access - MetaMask will show popup for user to select account
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
-      
+
       if (accounts && accounts.length > 0) {
         setWalletConnected(true)
         setAllAccounts(accounts)
-        setWalletAddress(accounts[0])
         setSelectedAccount(accounts[0])
-        // Load balance for connected account
         loadBalance(accounts[0])
         showToast('Wallet connected. Please select an account to save.', 'success')
       } else {
@@ -136,8 +134,7 @@ function AccountPage() {
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum)
-      
-      // Get signer for the selected account
+
       const signer = await provider.getSigner(selectedAccount)
 
       const timestamp = Date.now()
@@ -150,23 +147,19 @@ function AccountPage() {
       }
 
       const result = await updateWallet({ walletAddress: selectedAccount, signature, timestamp }, token)
-      
-      // Update credentials with new token and user info
+
       if (result.token && result.user) {
         localStorage.setItem('authToken', result.token)
         localStorage.setItem('user', JSON.stringify(result.user))
         localStorage.setItem('selectedRole', result.user.role)
-        
-        // Update auth context
+
         setAuthenticatedAccount(result.user.walletAddress || null)
         setAuthenticatedRole(result.user.role as any)
         setIsAuthenticated(true)
       }
-      
+
       showToast('Wallet address updated successfully! Credentials have been refreshed.', 'success')
-      setWalletAddress(selectedAccount)
-      
-      // Update user info with new data
+
       if (result.user) {
         setUserInfo(result.user)
       }
@@ -250,11 +243,10 @@ function AccountPage() {
                       setSelectedAccount(account)
                       loadBalance(account)
                     }}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition ${
-                      selectedAccount?.toLowerCase() === account.toLowerCase()
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-300 hover:border-primary-300 bg-white'
-                    }`}
+                    className={`w-full text-left p-3 rounded-lg border-2 transition ${selectedAccount?.toLowerCase() === account.toLowerCase()
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-300 hover:border-primary-300 bg-white'
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>

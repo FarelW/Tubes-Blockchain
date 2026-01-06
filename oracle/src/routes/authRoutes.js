@@ -5,10 +5,6 @@ import { Session } from '../models/Session.js'
 
 const router = express.Router()
 
-/**
- * Register new user
- * POST /api/auth/register
- */
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, role, walletAddress, signature } = req.body
@@ -25,15 +21,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
 
-    // Validate wallet address format
     if (!ethers.isAddress(walletAddress)) {
       return res.status(400).json({ error: 'Invalid wallet address format' })
     }
 
-    // Normalize wallet address to lowercase for consistent storage and comparison
     const normalizedWalletAddress = walletAddress.toLowerCase()
 
-    // Verify signature
     const message = `Logistics Escrow Registration\n\nUsername: ${username}\nEmail: ${email}\nRole: ${role}\nAddress: ${walletAddress}\nTimestamp: ${req.body.timestamp || Date.now()}`
     let recoveredAddress
     try {
@@ -46,7 +39,6 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Signature verification failed. Wallet address does not match signature.' })
     }
 
-    // Check if wallet address is already used (case-insensitive)
     const existingWalletUser = await User.findByWalletAddress(normalizedWalletAddress)
     if (existingWalletUser) {
       return res.status(400).json({
@@ -87,10 +79,6 @@ router.post('/register', async (req, res) => {
   }
 })
 
-/**
- * Login user
- * POST /api/auth/login
- */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body
@@ -134,10 +122,6 @@ router.post('/login', async (req, res) => {
   }
 })
 
-/**
- * Verify session token
- * GET /api/auth/verify
- */
 router.get('/verify', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
@@ -172,10 +156,6 @@ router.get('/verify', async (req, res) => {
   }
 })
 
-/**
- * Logout
- * POST /api/auth/logout
- */
 router.post('/logout', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
@@ -191,14 +171,6 @@ router.post('/logout', async (req, res) => {
   }
 })
 
-/**
- * Get all users (admin only)
- * GET /api/auth/users
- */
-/**
- * Get wallet address
- * GET /api/auth/wallet
- */
 router.get('/wallet', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
@@ -227,10 +199,6 @@ router.get('/wallet', async (req, res) => {
   }
 })
 
-/**
- * Update wallet address
- * PUT /api/auth/wallet
- */
 router.put('/wallet', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
@@ -250,12 +218,10 @@ router.put('/wallet', async (req, res) => {
       return res.status(400).json({ error: 'Wallet address and signature are required' })
     }
 
-    // Validate wallet address format
     if (!ethers.isAddress(walletAddress)) {
       return res.status(400).json({ error: 'Invalid wallet address format' })
     }
 
-    // Normalize wallet address to lowercase for consistent storage and comparison
     const normalizedWalletAddress = walletAddress.toLowerCase()
 
     const user = await User.findById(session.user_id)
@@ -263,7 +229,6 @@ router.put('/wallet', async (req, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    // Check if wallet address is already used by another user (case-insensitive)
     const existingUser = await User.findByWalletAddress(normalizedWalletAddress)
     if (existingUser && existingUser.id !== user.id) {
       return res.status(400).json({
@@ -272,7 +237,6 @@ router.put('/wallet', async (req, res) => {
       })
     }
 
-    // If user already has this wallet address, no need to update
     if (user.wallet_address && user.wallet_address.toLowerCase() === normalizedWalletAddress) {
       return res.json({
         success: true,
@@ -281,7 +245,6 @@ router.put('/wallet', async (req, res) => {
       })
     }
 
-    // Verify signature
     const message = `Logistics Escrow Wallet Update\n\nUsername: ${user.username}\nAddress: ${walletAddress}\nTimestamp: ${req.body.timestamp || Date.now()}`
     let recoveredAddress
     try {
@@ -301,7 +264,6 @@ router.put('/wallet', async (req, res) => {
       walletAddress: normalizedWalletAddress
     })
 
-    // Create new session with updated wallet address
     const newSession = await Session.create({
       userId: user.id,
       walletAddress: walletAddress,
@@ -349,10 +311,6 @@ router.get('/users', async (req, res) => {
   }
 })
 
-/**
- * Get logistics users with validated wallet
- * GET /api/auth/logistics
- */
 router.get('/logistics', async (req, res) => {
   try {
     const logisticsUsers = await User.findByRole('logistics')

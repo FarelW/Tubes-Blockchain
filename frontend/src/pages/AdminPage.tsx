@@ -35,7 +35,6 @@ function AdminPage() {
       const count = await getEscrowCount()
       const escrowPromises = []
 
-      // Load escrows from 1 to count (inclusive)
       for (let i = 1; i <= Number(count); i++) {
         escrowPromises.push(
           getEscrow(i.toString()).catch(err => {
@@ -48,10 +47,8 @@ function AdminPage() {
       const escrowsData = await Promise.all(escrowPromises)
       const validEscrows = escrowsData
         .map((escrowData, index) => {
-          // Skip null/undefined escrows (failed to load or doesn't exist)
           if (!escrowData) return null
 
-          // Double-check that escrow has valid data (buyer and seller are required, amount can be 0 for Created status)
           if (!escrowData.buyer || !escrowData.seller) {
             return null
           }
@@ -73,8 +70,6 @@ function AdminPage() {
       setEscrows(validEscrows)
     } catch (error) {
       console.error('Error loading escrows:', error)
-      // Don't clear escrows on error, keep existing data
-      // setEscrows([])
     } finally {
       setLoading(false)
     }
@@ -88,7 +83,6 @@ function AdminPage() {
         throw new Error('Authentication token not found')
       }
 
-      // Show loading message
       showToast('Updating status... Please wait for blockchain confirmation.', 'info')
 
       const response = await fetch(`http://localhost:3001/api/oracle/escrow/${escrowId}/status`, {
@@ -108,8 +102,7 @@ function AdminPage() {
         throw new Error(result.error || 'Error updating status')
       }
 
-      // Reload escrows after status update
-      await loadAllEscrows(false) // Don't show loading spinner on refresh
+      await loadAllEscrows(false)
       setSelectedEscrow(null)
       showToast(result.message || 'Status updated successfully', 'success')
     } catch (error: any) {

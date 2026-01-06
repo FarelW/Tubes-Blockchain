@@ -34,7 +34,6 @@ class BlockchainService {
           )
           logger.info(`Contract initialized at: ${config.ESCROW_CONTRACT_ADDRESS}`)
           
-          // Verify contract is deployed
           const code = await this.provider.getCode(config.ESCROW_CONTRACT_ADDRESS)
           if (code === '0x') {
             logger.error(`Contract not deployed at address ${config.ESCROW_CONTRACT_ADDRESS}`)
@@ -51,7 +50,6 @@ class BlockchainService {
         logger.error('Set ORACLE_PRIVATE_KEY in .env file')
       }
 
-      // Final status check
       const initialized = this.isInitialized()
       if (initialized) {
         logger.info('✅ Blockchain service fully initialized')
@@ -76,12 +74,9 @@ class BlockchainService {
 
     logger.info('Starting event listener for VerificationRequested events...')
 
-    // Listen to DeliveryMarked event instead of VerificationRequested
-    // Oracle will only verify when admin explicitly requests it
     this.contract.on('DeliveryMarked', async (escrowId, seller, event) => {
       logger.info(`DeliveryMarked event received for escrow ${escrowId} from ${seller}`)
       logger.info(`Escrow ${escrowId} marked as delivered. Waiting for admin verification.`)
-      // Don't auto-verify - admin will verify manually
     })
 
     this.eventListener = true
@@ -107,23 +102,19 @@ class BlockchainService {
       logger.info(`Destination GPS: ${escrow.destinationGPS}`)
       logger.info(`Temperature range: ${Number(escrow.minTemperature)/100}°C - ${Number(escrow.maxTemperature)/100}°C`)
 
-      // Check if escrow is already verified or completed
       if (escrow.verified) {
         logger.warn(`Escrow ${escrowId} is already verified. Skipping verification.`)
         return { alreadyVerified: true }
       }
 
-      // Check if escrow status is Delivered (5) - only verify if status is Delivered
-      if (Number(escrow.status) !== 5) { // 5 = Delivered
+      if (Number(escrow.status) !== 5) {
         logger.warn(`Escrow ${escrowId} status is ${escrow.status}, not Delivered (5). Skipping verification.`)
         return { statusNotReady: true, currentStatus: Number(escrow.status) }
       }
 
-      // Check if dummy IoT simulation is active - wait a bit if not ready
       const dummyData = dummyIoTService.getCurrentData(escrowId.toString())
       if (!dummyData || dummyData.status !== 'delivered') {
         logger.info(`Waiting for delivery simulation to complete for escrow ${escrowId}...`)
-        // Wait up to 10 seconds for delivery simulation
         for (let i = 0; i < 10; i++) {
           await new Promise(resolve => setTimeout(resolve, 1000))
           const updatedData = dummyIoTService.getCurrentData(escrowId.toString())
@@ -148,8 +139,6 @@ class BlockchainService {
       )
       logger.info(`Validation result: GPS matched=${validation.gpsMatched}, Temp valid=${validation.temperatureValid}, Humidity valid=${validation.humidityValid}, Pressure valid=${validation.pressureValid}`)
 
-      // Always submit verification (even if validation fails) - contract will handle it
-      // But only if validation passes, funds will be released
       await this.submitVerification(
         escrowId,
         `${iotData.gps.latitude},${iotData.gps.longitude}`,
@@ -261,9 +250,6 @@ class BlockchainService {
       throw new Error('Contract not initialized')
     }
     
-    // Admin can call startDelivery if they have seller wallet or use oracle
-    // For now, we'll try to call it - it will fail if caller is not seller
-    // In production, admin should use seller's wallet or oracle should have special permission
     const tx = await this.contract.startDelivery(escrowId)
     const receipt = await tx.wait()
     return receipt
@@ -284,7 +270,6 @@ class BlockchainService {
       throw new Error('Contract not initialized')
     }
     
-    // Check if wallet is owner or oracle
     const owner = await this.contract.owner()
     const oracleAddress = await this.contract.oracle()
     const isOwner = this.wallet.address.toLowerCase() === owner.toLowerCase()

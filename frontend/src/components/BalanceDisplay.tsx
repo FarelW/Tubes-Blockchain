@@ -8,10 +8,8 @@ function BalanceDisplay() {
   const [account, setAccount] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load balance once on mount
     checkBalance()
     
-    // Listen for account changes to update balance
     if (window.ethereum) {
       const handleAccountsChanged = () => {
         checkBalance()
@@ -26,10 +24,6 @@ function BalanceDisplay() {
       }
     }
   }, [])
-  
-  // Balance will be updated when account changes
-  // No auto-refresh to prevent UI flickering
-  // Balance can be manually refreshed by user if needed
 
   const checkBalance = async () => {
     if (!window.ethereum) {

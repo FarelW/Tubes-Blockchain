@@ -38,7 +38,6 @@ function DeliveryTracking() {
   useEffect(() => {
     checkAccount()
     loadTrackingData()
-    // No auto-refresh - user can manually refresh if needed
   }, [escrowId, authenticatedAccount])
 
   const checkAccount = async () => {

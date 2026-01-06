@@ -36,10 +36,8 @@ export interface VerificationData {
 export const getEscrowContract = async (readonly: boolean = false): Promise<ethers.Contract | null> => {
   try {
     if (readonly) {
-      // For read-only operations, try MetaMask provider first, fallback to JSON-RPC
       let provider: ethers.Provider | null = getProvider()
       
-      // If MetaMask provider is not available (e.g., in incognito mode), use JSON-RPC provider
       if (!provider) {
         provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.rpcUrl)
       }
@@ -48,7 +46,6 @@ export const getEscrowContract = async (readonly: boolean = false): Promise<ethe
         throw new Error('Provider not available')
       }
       
-      // Check if contract exists
       const code = await provider.getCode(ESCROW_CONTRACT_ADDRESS)
       if (code === '0x') {
         throw new Error(`Contract not deployed at address ${ESCROW_CONTRACT_ADDRESS}. Please deploy the contract first.`)
@@ -66,7 +63,6 @@ export const getEscrowContract = async (readonly: boolean = false): Promise<ethe
       throw new Error('Signer not available')
     }
 
-    // Check if contract exists
     const provider = getProvider()
     if (provider) {
       const code = await provider.getCode(ESCROW_CONTRACT_ADDRESS)
@@ -105,7 +101,6 @@ export const createEscrow = async (
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineDays * 24 * 60 * 60)
     
-    // Convert values to contract format (value * 100)
     const minTemp = BigInt(Math.round(minTemperature * 100))
     const maxTemp = BigInt(Math.round(maxTemperature * 100))
     const minHum = BigInt(Math.round(minHumidity * 100))
@@ -125,7 +120,6 @@ export const createEscrow = async (
       deadline: deadline.toString()
     })
 
-    // No payment needed - just create request
     const tx = await contract.createEscrow(
       sellerAddress,
       destinationGPS,

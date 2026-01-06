@@ -16,9 +16,6 @@ export interface DummyIoTData {
   destination?: { latitude: number; longitude: number }
 }
 
-/**
- * Start dummy IoT delivery simulation
- */
 export const startDummyIoT = async (
   escrowId: string,
   destinationGPS: string,
@@ -52,9 +49,6 @@ export const startDummyIoT = async (
   }
 }
 
-/**
- * Get current dummy IoT data
- */
 export const getDummyIoTData = async (escrowId: string): Promise<DummyIoTData | null> => {
   try {
     const response = await fetch(`${ORACLE_CONFIG.endpoint}/dummy-iot/${escrowId}`)
@@ -71,9 +65,6 @@ export const getDummyIoTData = async (escrowId: string): Promise<DummyIoTData | 
   }
 }
 
-/**
- * Get delivery history
- */
 export const getDeliveryHistory = async (escrowId: string): Promise<any[]> => {
   try {
     const response = await fetch(`${ORACLE_CONFIG.endpoint}/dummy-iot/${escrowId}/history`)
@@ -90,9 +81,6 @@ export const getDeliveryHistory = async (escrowId: string): Promise<any[]> => {
   }
 }
 
-/**
- * Stop dummy IoT simulation
- */
 export const stopDummyIoT = async (escrowId: string): Promise<boolean> => {
   try {
     const response = await fetch(`${ORACLE_CONFIG.endpoint}/dummy-iot/${escrowId}/stop`, {
