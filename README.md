@@ -97,9 +97,7 @@ TUBES-BLOCKCHAIN/
 │   └── package.json
 │
 ├── LICENSE                # MIT License
-├── README.md              # This file
-├── deploy.sh              # Deployment script (Linux/macOS)
-└── deploy.ps1             # Deployment script (Windows)
+└── README.md              # This file
 ```
 
 ---
@@ -321,7 +319,7 @@ Frontend akan berjalan di `http://localhost:3000`
 
 ---
 
-## 📖 Cara Menggunakan Aplikasi
+## Cara Menggunakan Aplikasi
 
 ### Default Accounts
 
