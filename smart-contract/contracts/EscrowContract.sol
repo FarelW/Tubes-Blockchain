@@ -471,9 +471,6 @@ contract EscrowContract {
         delete userEscrows[_user];
     }
 
-    function clearAllUserEscrows() external onlyOwner {
-    }
-
     function adminUpdateStatus(
         uint256 _escrowId,
         EscrowStatus _newStatus
@@ -501,7 +498,7 @@ contract EscrowContract {
             address seller = escrow.seller;
             
             escrow.status = EscrowStatus.Completed;
-            escrow.verified = true; // Mark as verified when admin completes it
+            escrow.verified = true;
             
             (bool success, ) = payable(seller).call{value: amount}("");
             require(success, "Transfer failed");
