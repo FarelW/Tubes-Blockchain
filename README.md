@@ -12,8 +12,6 @@ Sistem escrow berbasis blockchain untuk transaksi B2B logistics dengan verifikas
 6. [Deployment dan Integrasi Oracle](#deployment-dan-integrasi-oracle)
 7. [Menjalankan Aplikasi](#menjalankan-aplikasi)
 8. [Cara Menggunakan Aplikasi](#cara-menggunakan-aplikasi)
-9. [Script Deployment Otomatis](#script-deployment-otomatis)
-10. [Troubleshooting](#troubleshooting)
 
 ---
 
