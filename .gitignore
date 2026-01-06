@@ -1,21 +1,13 @@
 # Dependencies
 node_modules/
-/.pnp
 .pnp.js
 
 # Testing
-/coverage
+coverage/
 
 # Production
-/build
-/dist
-
-# Misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+build/
+dist/
 
 # Logs
 npm-debug.log*
@@ -42,14 +34,8 @@ lerna-debug.log*
 cache/
 artifacts/
 typechain-types/
+deployments/
 
-# Blockchain
-*.log
-.openzeppelin/
-
-# IPFS
-.ipfs/
-
-# OS
-Thumbs.db
-
+# Oracle
+oracle/data/
+oracle/logs/

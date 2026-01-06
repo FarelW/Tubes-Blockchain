@@ -2,10 +2,10 @@
 
 Sistem escrow berbasis blockchain untuk transaksi B2B logistics dengan verifikasi IoT otomatis menggunakan smart contract Ethereum.
 
-## 📋 Daftar Isi
+## Daftar Isi
 
 1. [Deskripsi Aplikasi](#deskripsi-aplikasi)
-2. [System Requirements](#system-requirements)
+2. [Requirements](#requirements)
 3. [Struktur Repository](#struktur-repository)
 4. [Langkah Menjalankan Private Chain](#langkah-menjalankan-private-chain)
 5. [Deployment Smart Contract](#deployment-smart-contract)
@@ -17,7 +17,7 @@ Sistem escrow berbasis blockchain untuk transaksi B2B logistics dengan verifikas
 
 ---
 
-## 🎯 Deskripsi Aplikasi
+## Deskripsi Aplikasi
 
 **B2B Logistics Escrow System** adalah aplikasi decentralized (dApp) yang memfasilitasi transaksi escrow untuk layanan logistics B2B dengan fitur:
 
@@ -54,48 +54,15 @@ Sistem escrow berbasis blockchain untuk transaksi B2B logistics dengan verifikas
 
 ---
 
-## 💻 System Requirements
-
-### Minimum Requirements
-
-#### Untuk Development (Local)
-- **OS**: Windows 10/11, macOS 10.15+, atau Linux (Ubuntu 20.04+)
-- **Node.js**: v18.0.0 atau lebih tinggi
-- **npm**: v9.0.0 atau lebih tinggi
-- **RAM**: Minimum 4GB (disarankan 8GB)
-- **Storage**: Minimum 2GB free space
-- **Browser**: Chrome/Edge dengan MetaMask extension
-
-#### Untuk Production Deployment
-- **Server**: Ubuntu 20.04+ atau Debian 11+
-- **Node.js**: v18.0.0 LTS
-- **RAM**: Minimum 8GB (disarankan 16GB)
-- **Storage**: Minimum 20GB SSD
-- **Network**: Static IP address (untuk oracle service)
-
-### Software yang Diperlukan
+## Requirements
 
 1. **Node.js & npm**
-   ```bash
-   # Download dari https://nodejs.org/
-   # Atau install via package manager
-   ```
 
 2. **MetaMask Browser Extension**
-   - Chrome: https://chrome.google.com/webstore/detail/metamask
-   - Firefox: https://addons.mozilla.org/firefox/addon/ether-metamask
-   - Edge: https://microsoftedge.microsoft.com/addons/detail/metamask
-
-3. **Git** (untuk clone repository)
-   ```bash
-   # Windows: https://git-scm.com/download/win
-   # macOS: brew install git
-   # Linux: sudo apt install git
-   ```
 
 ---
 
-## 📁 Struktur Repository
+## Struktur Repository
 
 ```
 TUBES-BLOCKCHAIN/
@@ -139,7 +106,7 @@ TUBES-BLOCKCHAIN/
 
 ---
 
-## ⛓️ Langkah Menjalankan Private Chain
+## Langkah Menjalankan Private Chain
 
 Kami menggunakan **Hardhat Network** sebagai private blockchain untuk development.
 
@@ -178,68 +145,19 @@ Hardhat menyediakan local blockchain yang sudah terkonfigurasi dengan 20 akun de
    - Paste private key
    - Network akan otomatis terdeteksi sebagai "Hardhat Network"
 
-4. **Konfigurasi Network di MetaMask** (jika belum auto-detect)
+4. **Konfigurasi Network di MetaMask**
    - Network Name: `Hardhat Local`
    - RPC URL: `http://127.0.0.1:8545`
    - Chain ID: `31337`
    - Currency Symbol: `ETH`
 
-### Metode 2: Geth (Go-Ethereum) - Untuk Production-like Environment
-
-Jika ingin menggunakan Geth untuk environment yang lebih mirip production:
-
-1. **Install Geth**
-   ```bash
-   # Windows: Download dari https://geth.ethereum.org/downloads/
-   # macOS: brew install ethereum
-   # Linux: sudo apt install ethereum
-   ```
-
-2. **Buat Genesis Block**
-   ```bash
-   # Buat file genesis.json
-   {
-     "config": {
-       "chainId": 1337,
-       "homesteadBlock": 0,
-       "eip150Block": 0,
-       "eip155Block": 0,
-       "eip158Block": 0
-     },
-     "alloc": {
-       "0xYourAddress": {
-         "balance": "10000000000000000000000"
-       }
-     },
-     "difficulty": "0x400",
-     "gasLimit": "0x8000000"
-   }
-   ```
-
-3. **Initialize dan Start Geth**
-   ```bash
-   geth --datadir ./chaindata init genesis.json
-   geth --datadir ./chaindata --http --http.addr "0.0.0.0" --http.port 8545 --http.api "eth,net,web3,personal" --http.corsdomain "*" --networkid 1337 --nodiscover --maxpeers 0 --mine --miner.threads 1 --miner.etherbase "0xYourAddress"
-   ```
-
-4. **Update hardhat.config.js**
-   ```javascript
-   networks: {
-     geth: {
-       url: "http://127.0.0.1:8545",
-       chainId: 1337,
-       accounts: [process.env.PRIVATE_KEY]
-     }
-   }
-   ```
-
 ---
 
-## 🚀 Deployment Smart Contract
+## Deployment Smart Contract
 
 ### Prerequisites
 
-1. Hardhat node sudah berjalan (lihat langkah sebelumnya)
+1. Hardhat node sudah berjalan
 2. Dependencies sudah terinstall
 3. MetaMask sudah terhubung ke Hardhat network
 
@@ -247,7 +165,6 @@ Jika ingin menggunakan Geth untuk environment yang lebih mirip production:
 
 1. **Pastikan Hardhat Node Berjalan**
    ```bash
-   # Di terminal terpisah
    cd smart-contract
    npm run node
    ```
@@ -257,15 +174,13 @@ Jika ingin menggunakan Geth untuk environment yang lebih mirip production:
    # Di terminal baru
    cd smart-contract
    npm run deploy
-   # atau
-   npx hardhat run scripts/deploy.js --network localhost
    ```
 
 3. **Catat Contract Address**
    
    Setelah deployment, script akan menampilkan:
    ```
-   EscrowContract deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+   EscrowContract deployed to: 0x.....
    ```
    
    **PENTING**: Simpan address ini untuk konfigurasi frontend dan oracle!
@@ -275,13 +190,13 @@ Jika ingin menggunakan Geth untuk environment yang lebih mirip production:
    **Frontend:**
    ```typescript
    // frontend/src/utils/constants.ts
-   export const ESCROW_CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+   export const ESCROW_CONTRACT_ADDRESS = '0x.....'
    ```
 
    **Oracle:**
    ```bash
    # oracle/.env
-   ESCROW_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+   ESCROW_CONTRACT_ADDRESS=0x.....
    ```
 
 ### Script Deployment (`smart-contract/scripts/deploy.js`)
@@ -303,7 +218,7 @@ npx hardhat run scripts/updateOracle.js --network localhost
 
 ---
 
-## 🔮 Deployment dan Integrasi Oracle
+## Deployment dan Integrasi Oracle
 
 Oracle service berfungsi sebagai:
 1. **Backend API**: Authentication & Authorization
@@ -327,15 +242,15 @@ Oracle service berfungsi sebagai:
    PORT=3001
    RPC_URL=http://127.0.0.1:8545
    CHAIN_ID=31337
-   ESCROW_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
-   ORACLE_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+   ESCROW_CONTRACT_ADDRESS=0x.....
+   ORACLE_PRIVATE_KEY=0x.....
    IOT_API_ENDPOINT=http://localhost:3001/api/oracle/mock-iot
    LOG_LEVEL=info
    ```
 
    **Catatan**: 
    - `ESCROW_CONTRACT_ADDRESS`: Gunakan address dari deployment sebelumnya
-   - `ORACLE_PRIVATE_KEY`: Gunakan private key dari akun yang digunakan sebagai oracle (biasanya deployer account)
+   - `ORACLE_PRIVATE_KEY`: Gunakan private key dari akun yang digunakan sebagai oracle
 
 3. **Initialize Database**
    ```bash
@@ -363,49 +278,11 @@ Oracle service berfungsi sebagai:
 5. **Start Oracle Service**
    ```bash
    npm start
-   # atau untuk development dengan auto-reload
-   npm run dev
    ```
-
-6. **Verify Service Running**
-   
-   Buka browser dan akses:
-   ```
-   http://localhost:3001/health
-   ```
-   
-   Seharusnya menampilkan:
-   ```json
-   {
-     "status": "healthy",
-     "timestamp": "2025-01-XX..."
-   }
-   ```
-
-### Integrasi dengan Smart Contract
-
-Oracle service akan:
-- **Listen untuk events**: `VerificationRequested`, `DeliveryMarked`, `StatusUpdated`
-- **Auto-verify**: Ketika escrow status `Delivered`, oracle akan otomatis verify menggunakan data IoT
-- **Admin functions**: Admin dapat mengubah status escrow melalui API
-
-### API Endpoints
-
-#### Authentication
-- `POST /api/auth/register` - Register user baru
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/verify` - Verify token
-- `PUT /api/auth/wallet` - Update wallet address
-- `GET /api/auth/logistics` - Get validated logistics providers
-
-#### Oracle
-- `GET /api/oracle/escrow/:id` - Get escrow details
-- `PUT /api/oracle/escrow/:id/status` - Update escrow status (admin only)
-- `POST /api/oracle/verify/:id` - Manual verification trigger
 
 ---
 
-## 🖥️ Menjalankan Aplikasi
+## Menjalankan Aplikasi
 
 ### 1. Start Hardhat Node
 ```bash
@@ -425,10 +302,6 @@ npm run deploy
 ```bash
 # Di terminal baru
 cd oracle
-npm install
-cp env.example .env
-# Edit .env dengan contract address dari deployment
-npm run init-db
 npm start
 ```
 
@@ -440,7 +313,7 @@ npm install
 npm run dev
 ```
 
-Frontend akan berjalan di `http://localhost:5173`
+Frontend akan berjalan di `http://localhost:3000`
 
 ### 5. Setup MetaMask
 
@@ -454,7 +327,7 @@ Frontend akan berjalan di `http://localhost:5173`
 
 ### Default Accounts
 
-Setelah `npm run init-db`, tersedia 3 default accounts:
+Setelah `npm run init-db`, tersedia 3 default accounts: (Wallet disesuaikan dengan hasil hardhat masing-masing)
 
 1. **Admin**
    - Username: `admin`
@@ -534,124 +407,16 @@ Admin dapat mengubah status menjadi `Refunded` untuk mengembalikan dana ke shipp
 
 ---
 
-## 🤖 Script Deployment Otomatis
-
-Kami menyediakan script untuk memudahkan deployment:
-
-### Windows (PowerShell)
-
-Jalankan script `deploy.ps1`:
-
-```powershell
-.\deploy.ps1
-```
-
-Script ini akan:
-- Install dependencies untuk semua modul
-- Start Hardhat node di background
-- Deploy smart contract
-- Update oracle `.env` dengan contract address
-- Update frontend constants dengan contract address
-
-### Linux/macOS (Bash)
-
-Jalankan script `deploy.sh`:
-
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-Script ini akan:
-- Install dependencies untuk semua modul
-- Start Hardhat node di background
-- Deploy smart contract
-- Update oracle `.env` dengan contract address
-- Update frontend constants dengan contract address
-
----
-
-## 🔧 Troubleshooting
-
-### Problem: "Contract not deployed"
-
-**Solusi:**
-1. Pastikan Hardhat node berjalan
-2. Pastikan contract sudah di-deploy (`npm run deploy`)
-3. Pastikan contract address di frontend dan oracle sesuai dengan deployment
-
-### Problem: "Provider not available"
-
-**Solusi:**
-1. Pastikan MetaMask terinstall dan aktif
-2. Pastikan MetaMask terhubung ke Hardhat network
-3. Refresh halaman setelah connect MetaMask
-
-### Problem: "Execution reverted"
-
-**Solusi:**
-1. Pastikan wallet yang digunakan sesuai dengan role
-2. Pastikan status escrow sudah sesuai untuk action yang dilakukan
-3. Check console untuk error message detail
-
-### Problem: "Oracle not initialized"
-
-**Solusi:**
-1. Pastikan `.env` file sudah diisi dengan benar
-2. Pastikan `ORACLE_PRIVATE_KEY` valid
-3. Pastikan `ESCROW_CONTRACT_ADDRESS` sesuai dengan deployment
-4. Restart oracle service setelah update `.env`
-
-### Problem: Database locked
-
-**Solusi:**
-1. Pastikan hanya satu instance oracle service yang berjalan
-2. Stop semua instance oracle service
-3. Hapus file `oracle/data/escrow.db` dan jalankan `npm run init-db` lagi
-
-### Problem: Port already in use
-
-**Solusi:**
-1. Cek process yang menggunakan port:
-   ```bash
-   # Windows
-   netstat -ano | findstr :3001
-   
-   # Linux/macOS
-   lsof -i :3001
-   ```
-2. Kill process atau ubah PORT di `.env`
-
----
-
-## 📹 Video Demonstrasi
-
-[Link video demonstrasi akan ditambahkan di sini]
-
-**Atau** buat video yang menunjukkan:
-1. Setup dan deployment
-2. Workflow lengkap dari create request hingga completed
-3. Fitur-fitur utama aplikasi
-
----
-
-## 📄 License
+## License
 
 MIT License - Lihat file [LICENSE](LICENSE) untuk detail lengkap.
 
 ---
 
-## 👥 Contributors
+## Contributors
 
-- [Nama Contributor 1]
-- [Nama Contributor 2]
-
----
-
-## 📞 Support
-
-Untuk pertanyaan atau issue, silakan buat issue di repository GitHub.
+- 13522047 / Farel Winalda
+- 13522055 / Benardo
+- 13522073 / Juan Alfred Wijaya
 
 ---
-
-**Happy Coding! 🚀**
